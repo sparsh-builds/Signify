@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signify | Biometric Verification & Forensic Telemetry</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --bg-body: #0b1329;
+      --bg-card: #1e293b;
+      --bg-input: #0f172a;
+      --border-color: #334155;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary-blue: #38bdf8;
+      --table-header: #0f172a;
+    }
+
+    body.light-mode {
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-input: #f1f5f9;
+      --border-color: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary-blue: #0284c7;
+      --table-header: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.2s ease, color 0.2s ease; }
+    body { background: var(--bg-body); color: var(--text-main); margin: 0; padding: 24px; display: flex; justify-content: center; }
+    .layout { width: 100%; max-width: 1280px; display: flex; flex-direction: column; gap: 20px; }
+
+    .topbar { background: var(--bg-card); padding: 18px 24px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .topbar h1 { margin: 0; font-size: 1.35rem; color: var(--primary-blue); }
+    .top-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    
+    .btn-powerbi { 
+      background: #f59e0b !important; 
+      color: #000000 !important; 
+      border: 1px solid #d97706; 
+      padding: 9px 15px; 
+      border-radius: 6px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      font-size: 0.85rem; 
+      text-decoration: none !important; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+    }
+    .btn-powerbi:hover { background: #d97706 !important; }
+
+    .btn-pdf { 
+      background: #10b981 !important; 
+      color: #ffffff !important; 
+      border: 1px solid #059669; 
+      padding: 9px 15px; 
+      border-radius: 6px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      font-size: 0.85rem; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+    }
+    .btn-pdf:hover { background: #059669 !important; }
+
+    .btn-theme {
+      background: #6366f1;
+      color: #ffffff;
+      border: none;
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-theme:hover { background: #4f46e5; }
+
+    .btn-danger { background: #ef4444; color: #fff; border: none; padding: 9px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+    .btn-danger:hover { background: #dc2626; }
+
+    .tab-bar { display: flex; gap: 12px; }
+    .tab-btn { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .tab-btn.active { background: #0284c7; color: #ffffff; border-color: #0284c7; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    .kpi-card { background: var(--bg-card); border-radius: 10px; padding: 16px; border: 1px solid var(--border-color); text-align: center; }
+    .kpi-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+    .kpi-value { font-size: 1.6rem; font-weight: bold; color: var(--primary-blue); }
+
+    .workspace-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 850px) { .workspace-grid { grid-template-columns: 1fr; } }
+
+    .card { background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .card h3 { margin-top: 0; color: var(--primary-blue); font-size: 1.05rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+
+    label { font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-top: 10px; margin-bottom: 4px; }
+    input[type="file"], input[type="text"], select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-main); font-size: 0.85rem; }
+
+    .preview-box { width: 100%; height: 160px; background: var(--bg-input); border: 2px dashed #475569; border-radius: 8px; margin-top: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    .preview-box img { max-width: 95%; max-height: 95%; object-fit: contain; background: #ffffff; border-radius: 4px; padding: 4px; }
+
+    canvas.pad { background: #ffffff; border: 2px dashed #64748b; border-radius: 8px; cursor: crosshair; display: block; margin-top: 8px; width: 100%; height: 160px; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+    button.main-btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: #fff; }
+    .btn-primary { background: #0284c7; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-gray { background: #475569; }
+
+    #verdictBox { display: none; padding: 18px; border-radius: 8px; font-size: 1rem; font-weight: 600; line-height: 1.5; margin-top: 10px; }
+    .real { background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #4ade80; }
+    .fake { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; }
+
+    .forensic-panel { display: none; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-top: 15px; }
+    .forensic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .forensic-item { text-align: center; }
+    .forensic-item h4 { margin: 4px 0 8px 0; font-size: 0.85rem; color: var(--text-muted); }
+    .forensic-canvas { width: 100%; height: 140px; background: #0b1329; border: 1px solid var(--border-color); border-radius: 6px; }
+
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+    .full-width { grid-column: 1 / -1; }
+    .chart-box { position: relative; height: 260px; width: 100%; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+    th { background: var(--table-header); color: var(--text-muted); text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color); }
+    td { padding: 10px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+    .badge-real { background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+    .badge-fake { background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+    .table-container { max-height: 280px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+  <div class="layout" id="reportContent">
+    <div class="topbar">
+      <div>
+        <h1>Signify Verification & Biometric Telemetry</h1>
+        <small style="color: var(--text-muted);">Siamese CNN Latent Space • Crest-Trough Waveforms • Harris Corner Micro-Tremors</small>
+      </div>
+      <div class="top-actions">
+        <a class="btn-powerbi" href="http://127.0.0.1:8000/powerbi/telemetry" target="_blank">
+          📊 Power BI Feed
+        </a>
+        <button type="button" class="btn-pdf" id="btnDownloadPDF" onclick="exportAuditCertificate()">
+          📄 Export PDF Report
+        </button>
+        <button type="button" class="btn-theme" id="btnThemeToggle" onclick="toggleTheme()">
+          🌓 Mode
+        </button>
+        <button type="button" class="btn-danger" onclick="clearAllHistory()">Wipe Logs</button>
+      </div>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="tab-bar">
+      <button type="button" class="tab-btn active" id="tabDraw" onclick="setMode('draw')">Mode 1: Draw Pad</button>
+      <button type="button" class="tab-btn" id="tabUpload" onclick="setMode('upload')">Mode 2: Dual Image</button>
+      <button type="button" class="tab-btn" id="tabEnroll" onclick="setMode('enroll')">Mode 3: Multi-Specimen Enrollment</button>
+    </div>
+
+    <!-- KPI Summary Row -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">Total Verifications</div>
+        <div class="kpi-value" id="kpiTotal">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Genuine Count</div>
+        <div class="kpi-value" id="kpiGenuine" style="color: #4ade80;">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Forged Count</div>
+        <div class="kpi-value" id="kpiForged" style="color: #f87171;">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Acceptance Rate</div>
+        <div class="kpi-value" id="kpiRate">0.0%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Avg Confidence</div>
+        <div class="kpi-value" id="kpiAvg">0.0%</div>
+      </div>
+    </div>
+
+    <!-- Risk Tier Selector -->
+    <div class="card" style="padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <strong style="color: var(--primary-blue); font-size: 0.9rem;">Transaction Risk Policy:</strong>
+        <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 8px;">Calibrates threshold bounds against natural signer variation</span>
+      </div>
+      <select id="globalRiskTier" style="width: auto; min-width: 260px; padding: 6px 12px;">
+        <option value="low">Low Risk (Threshold 55% - General KYC)</option>
+        <option value="medium" selected>Medium Risk (Threshold 65% - Standard Bank Cheque)</option>
+        <option value="high">High Risk (Threshold 78% - High-Value Wire/Property)</option>
+      </select>
+    </div>
+
+    <!-- Mode 1 Workspace: Draw Pad -->
+    <div id="modeDrawWorkspace" class="workspace-grid">
+      <div class="card">
+        <h3>1. Genuine Reference Image</h3>
+        <label>Upload Reference Signature:</label>
+        <input type="file" id="drawRefFile" accept="image/*" onchange="previewImg('drawRefFile', 'drawRefImg', 'drawRefPlaceholder')">
+        <div class="preview-box">
+          <span id="drawRefPlaceholder" style="color: #64748b; font-size: 0.85rem;">Reference preview</span>
+          <img id="drawRefImg" style="display: none;" alt="Reference">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>2. Live Candidate Signature (Draw)</h3>
+        <label>Draw candidate signature:</label>
+        <canvas id="pad" class="pad" width="520" height="160"></canvas>
+        <div class="btn-row">
+          <button type="button" class="main-btn btn-gray" onclick="clearPad()">Clear Canvas</button>
+          <button type="button" class="main-btn btn-primary" onclick="verifyDrawn()">Verify & Analyze</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode 2 Workspace: Dual Image -->
+    <div id="modeUploadWorkspace" class="workspace-grid" style="display: none;">
+      <div class="card">
+        <h3>1. Genuine Reference Image</h3>
+        <label>Input Type:</label>
+        <select id="compRealMode">
+          <option value="scan">Cropped Signature Scan</option>
+          <option value="photo">Phone Photo of Signature</option>
+          <option value="document">Full Signed Document (Auto-Crop)</option>
+        </select>
+        <label>Upload Reference:</label>
+        <input type="file" id="compRealFile" accept="image/*" onchange="previewImg('compRealFile', 'compRealImg', 'compRealPlaceholder')">
+        <div class="preview-box">
+          <span id="compRealPlaceholder" style="color: #64748b; font-size: 0.85rem;">Reference preview</span>
+          <img id="compRealImg" style="display: none;" alt="Reference">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>2. Questioned Signature Image</h3>
+        <label>Input Type:</label>
+        <select id="compTestMode">
+          <option value="scan">Cropped Signature Scan</option>
+          <option value="photo">Phone Photo of Signature</option>
+          <option value="document">Full Signed Document (Auto-Crop)</option>
+        </select>
+        <label>Upload Test Signature:</label>
+        <input type="file" id="compTestFile" accept="image/*" onchange="previewImg('compTestFile', 'compTestImg', 'compTestPlaceholder')">
+        <div class="preview-box">
+          <span id="compTestPlaceholder" style="color: #64748b; font-size: 0.85rem;">Questioned preview</span>
+          <img id="compTestImg" style="display: none;" alt="Questioned">
+        </div>
+        <div class="btn-row">
+          <button type="button" class="main-btn btn-primary" onclick="verifyImagePair()">Compare Image Pair</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode 3 Workspace: Multi-Specimen Enrollment -->
+    <div id="modeEnrollWorkspace" class="card full-width" style="display: none;">
+      <h3>User Biometric Onboarding (Centroid Learning)</h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0;">
+        Upload 2 to 5 genuine signature specimens. The system computes a master 128-d centroid vector and a baseline variance tolerance boundary.
+      </p>
+      <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 12px;">
+        <div style="flex: 1; min-width: 200px;">
+          <label>Account ID / Username:</label>
+          <input type="text" id="enrollUsername" placeholder="e.g., ACC-10948">
+        </div>
+        <div style="flex: 2; min-width: 280px;">
+          <label>Select 2-5 Specimen Images (Hold Ctrl to select multiple):</label>
+          <input type="file" id="enrollFiles" accept="image/*" multiple>
+        </div>
+      </div>
+      <button type="button" class="main-btn btn-primary" onclick="submitMultiEnrollment()">Enroll Biometric Centroid</button>
+      <div id="enrollStatusBox" style="display: none; margin-top: 12px; padding: 12px; border-radius: 6px; font-size: 0.85rem;"></div>
+    </div>
+
+    <!-- Verdict Banner -->
+    <div id="verdictBox"></div>
+
+    <!-- Forensic Heatmap & Stroke Diff Panel -->
+    <div class="forensic-panel card full-width" id="forensicPanel">
+      <h3>Visual Forensic Investigation: Stroke Dynamics & Overlay</h3>
+      <div class="forensic-grid">
+        <div class="forensic-item">
+          <h4>Reconstructed Pen Pressure Heatmap (Velocity/Thickness)</h4>
+          <canvas id="heatmapCanvas" class="forensic-canvas" width="500" height="150"></canvas>
+          <small style="color: #64748b;">Cool Blue = Fluid/Fast | Warm Red = Hesitation/High Pressure</small>
+        </div>
+        <div class="forensic-item">
+          <h4>Morphological Stroke Difference Alignment</h4>
+          <canvas id="diffCanvas" class="forensic-canvas" width="500" height="150"></canvas>
+          <small style="color: #64748b;">Green = Parity Match | Red = Tremor Deviations / Tracing Flaws</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Dashboard Charts Grid -->
+    <div class="charts-grid">
+      <div class="card">
+        <h3>Historical Distribution</h3>
+        <div class="chart-box">
+          <canvas id="donutChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Multi-Feature Radar Alignment</h3>
+        <div class="chart-box">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Score Progression Across Attempts</h3>
+        <div class="chart-box">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Stroke Contour Profile (Crests & Troughs)</h3>
+        <div class="chart-box">
+          <canvas id="profileChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Log Table -->
+    <div class="card full-width">
+      <h3>Verification Audit History Log</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th># ID</th>
+              <th>Timestamp</th>
+              <th>Verdict</th>
+              <th>Overall Score</th>
+              <th>Metric Match</th>
+              <th>Corner Match</th>
+              <th>CNN Similarity</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr><td colspan="7" style="text-align: center; color: #64748b;">No attempts recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+    let lastResult = null;
+
+    let donutChartInstance = null;
+    let trendChartInstance = null;
+    let radarChartInstance = null;
+    let profileChartInstance = null;
+
+    window.onload = () => loadHistoryDashboard();
+
+    function toggleTheme() {
+      document.body.classList.toggle("light-mode");
+    }
+
+    function setMode(mode) {
+      document.getElementById('modeDrawWorkspace').style.display = mode === 'draw' ? 'grid' : 'none';
+      document.getElementById('modeUploadWorkspace').style.display = mode === 'upload' ? 'grid' : 'none';
+      document.getElementById('modeEnrollWorkspace').style.display = mode === 'enroll' ? 'block' : 'none';
+
+      document.getElementById('tabDraw').className = mode === 'draw' ? 'tab-btn active' : 'tab-btn';
+      document.getElementById('tabUpload').className = mode === 'upload' ? 'tab-btn active' : 'tab-btn';
+      document.getElementById('tabEnroll').className = mode === 'enroll' ? 'tab-btn active' : 'tab-btn';
+
+      document.getElementById('verdictBox').style.display = 'none';
+      document.getElementById('forensicPanel').style.display = 'none';
+    }
+
+    function previewImg(inputId, imgId, placeholderId) {
+      const file = document.getElementById(inputId).files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.getElementById(imgId);
+          img.src = e.target.result;
+          img.style.display = "block";
+          document.getElementById(placeholderId).style.display = "none";
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    const canvas = document.getElementById("pad");
+    const ctx = canvas.getContext("2d");
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#000000";
+    let isDrawing = false;
+
+    canvas.addEventListener("mousedown", (e) => { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+    canvas.addEventListener("mousemove", (e) => { if (isDrawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
+    window.addEventListener("mouseup", () => isDrawing = false);
+
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      isDrawing = true;
+      ctx.beginPath();
+      ctx.moveTo(t.clientX - r.left, t.clientY - r.top);
+    });
+    canvas.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      ctx.lineTo(t.clientX - r.left, t.clientY - r.top);
+      ctx.stroke();
+    });
+    window.addEventListener("touchend", () => isDrawing = false);
+
+    function clearPad() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      document.getElementById("verdictBox").style.display = "none";
+      document.getElementById("forensicPanel").style.display = "none";
+    }
+
+    async function loadHistoryDashboard() {
+      try {
+        const res = await fetch(`${API_BASE}/history`);
+        const data = await res.json();
+
+        document.getElementById("kpiTotal").innerText = data.total_attempts;
+        document.getElementById("kpiGenuine").innerText = data.genuine_count;
+        document.getElementById("kpiForged").innerText = data.forged_count;
+        document.getElementById("kpiRate").innerText = `${data.acceptance_rate}%`;
+        document.getElementById("kpiAvg").innerText = `${data.average_score}%`;
+
+        renderDonutChart(data.genuine_count, data.forged_count);
+        renderTrendChart([...data.logs].reverse());
+        renderTable(data.logs);
+      } catch (e) {
+        console.error("Failed to load history:", e);
+      }
+    }
+
+    async function refreshTableAndKpisOnly() {
+      try {
+        const res = await fetch(`${API_BASE}/history`);
+        const data = await res.json();
+
+        document.getElementById("kpiTotal").innerText = data.total_attempts;
+        document.getElementById("kpiGenuine").innerText = data.genuine_count;
+        document.getElementById("kpiForged").innerText = data.forged_count;
+        document.getElementById("kpiRate").innerText = `${data.acceptance_rate}%`;
+        document.getElementById("kpiAvg").innerText = `${data.average_score}%`;
+
+        renderDonutChart(data.genuine_count, data.forged_count);
+        renderTrendChart([...data.logs].reverse());
+        renderTable(data.logs);
+      } catch (e) {
+        console.error("Failed to update history:", e);
+      }
+    }
+
+    async function verifyDrawn() {
+      const refFile = document.getElementById("drawRefFile").files[0];
+      if (!refFile) { alert("Please select a Reference Signature Image."); return; }
+
+      const drawnBlob = await new Promise(res => canvas.toBlob(res, "image/png"));
+      const fd = new FormData();
+      fd.append("real_signature", refFile);
+      fd.append("questioned_signature", drawnBlob, "drawn.png");
+      fd.append("risk_tier", document.getElementById("globalRiskTier").value);
+      sendVerification(fd);
+    }
+
+    async function verifyImagePair() {
+      const realFile = document.getElementById("compRealFile").files[0];
+      const testFile = document.getElementById("compTestFile").files[0];
+      if (!realFile || !testFile) { alert("Select both Reference and Questioned images."); return; }
+
+      const fd = new FormData();
+      fd.append("real_signature", realFile);
+      fd.append("questioned_signature", testFile);
+      fd.append("real_mode", document.getElementById("compRealMode").value);
+      fd.append("questioned_mode", document.getElementById("compTestMode").value);
+      fd.append("risk_tier", document.getElementById("globalRiskTier").value);
+      sendVerification(fd);
+    }
+
+    async function sendVerification(formData) {
+      const verdictBox = document.getElementById("verdictBox");
+      verdictBox.style.display = "block";
+      verdictBox.className = "";
+      verdictBox.style.background = "#334155";
+      verdictBox.innerText = "Extracting deep CNN embeddings, crest-troughs, and corner descriptors...";
+
+      try {
+        const res = await fetch(`${API_BASE}/compare-signatures`, { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Server error");
+
+        lastResult = data;
+        const isReal = data.verdict && data.verdict.includes("GENUINE");
+        const isSpoof = data.verdict && data.verdict.includes("SPOOF");
+
+        if (isSpoof) {
+          verdictBox.className = "fake";
+          verdictBox.innerHTML = `
+            <strong>⚠️ SECURITY BREACH DETECTED</strong><br>
+            ${data.decision}<br>
+            <small style="color: #cbd5e1;">Hardware presentation attack detected via 2D Fast Fourier Transform (Spectral Moiré Grating).</small>
+          `;
+        } else {
+          verdictBox.className = isReal ? "real" : "fake";
+          verdictBox.innerHTML = `
+            <strong>Verdict: ${data.verdict}</strong><br>
+            ${data.decision} • Score: <strong>${data.overall_score}%</strong> 
+            (Morphology: ${data.metric_confidence}%, Harris Corner: ${data.keypoint_confidence}%, CNN Sim: ${data.cnn_similarity}%)
+          `;
+        }
+
+        renderRadarChart(data.metric_confidence, data.keypoint_confidence, data.cnn_similarity, data.overall_score);
+        renderProfileChart(
+          data.profiles ? data.profiles.labels : [], 
+          data.profiles ? data.profiles.real : [], 
+          data.profiles ? data.profiles.quest : []
+        );
+        drawSyntheticForensics(data);
+
+        refreshTableAndKpisOnly();
+
+      } catch (err) {
+        verdictBox.className = "fake";
+        verdictBox.innerHTML = `<strong>Error:</strong> ${err.message}`;
+      }
+    }
+
+    async function submitMultiEnrollment() {
+      const username = document.getElementById("enrollUsername").value.trim();
+      const fileInput = document.getElementById("enrollFiles");
+      const statusBox = document.getElementById("enrollStatusBox");
+
+      if (!username) { alert("Please enter a username or account identifier."); return; }
+      if (fileInput.files.length < 2) { alert("Please select at least 2 specimen files."); return; }
+
+      const fd = new FormData();
+      fd.append("username", username);
+      for (let i = 0; i < fileInput.files.length; i++) {
+        fd.append("files", fileInput.files[i]);
+      }
+
+      statusBox.style.display = "block";
+      statusBox.style.background = "#334155";
+      statusBox.style.color = "#38bdf8";
+      statusBox.innerText = "Computing 128-d latent centroid and intra-personal variance boundary...";
+
+      try {
+        const res = await fetch(`${API_BASE}/enroll-multi`, { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Enrollment failed.");
+
+        statusBox.style.background = "rgba(34, 197, 94, 0.15)";
+        statusBox.style.color = "#4ade80";
+        statusBox.innerHTML = `<strong>Enrolled:</strong> ${data.message}<br>Baseline Variance (&sigma;): <strong>${data.intra_variance_sigma}</strong> | Specimens: ${data.specimens_enrolled}`;
+      } catch (err) {
+        statusBox.style.background = "rgba(239, 68, 68, 0.15)";
+        statusBox.style.color = "#f87171";
+        statusBox.innerText = `Error: ${err.message}`;
+      }
+    }
+
+    function drawSyntheticForensics(data) {
+      const panel = document.getElementById("forensicPanel");
+      panel.style.display = "block";
+
+      const hCanvas = document.getElementById("heatmapCanvas");
+      const hCtx = hCanvas.getContext("2d");
+      hCtx.fillStyle = "#0f172a";
+      hCtx.fillRect(0, 0, hCanvas.width, hCanvas.height);
+
+      const isReal = data.verdict && data.verdict.includes("GENUINE");
+      const grad = hCtx.createLinearGradient(30, 0, 450, 0);
+      if (isReal) {
+        grad.addColorStop(0, "#06b6d4");
+        grad.addColorStop(0.5, "#3b82f6");
+        grad.addColorStop(1, "#10b981");
+      } else {
+        grad.addColorStop(0, "#ef4444");
+        grad.addColorStop(0.4, "#f59e0b");
+        grad.addColorStop(1, "#ef4444");
+      }
+
+      hCtx.strokeStyle = grad;
+      hCtx.lineWidth = isReal ? 3 : 5;
+      hCtx.lineCap = "round";
+      hCtx.beginPath();
+      const points = (data.profiles && data.profiles.quest) ? data.profiles.quest.slice(0, 30) : [];
+      points.forEach((val, i) => {
+        const x = 30 + (i * 14);
+        const y = 120 - (val * 0.9);
+        if (i === 0) hCtx.moveTo(x, y);
+        else hCtx.lineTo(x, y);
+      });
+      hCtx.stroke();
+
+      const dCanvas = document.getElementById("diffCanvas");
+      const dCtx = dCanvas.getContext("2d");
+      dCtx.fillStyle = "#0f172a";
+      dCtx.fillRect(0, 0, dCanvas.width, dCanvas.height);
+
+      dCtx.strokeStyle = "#22c55e";
+      dCtx.lineWidth = 2;
+      dCtx.beginPath();
+      const realPoints = (data.profiles && data.profiles.real) ? data.profiles.real.slice(0, 30) : [];
+      realPoints.forEach((val, i) => {
+        const x = 30 + (i * 14);
+        const y = 120 - (val * 0.9);
+        if (i === 0) dCtx.moveTo(x, y);
+        else dCtx.lineTo(x, y);
+      });
+      dCtx.stroke();
+
+      dCtx.strokeStyle = isReal ? "#38bdf8" : "#ef4444";
+      dCtx.lineWidth = 2;
+      dCtx.setLineDash([4, 4]);
+      dCtx.beginPath();
+      points.forEach((val, i) => {
+        const x = 30 + (i * 14);
+        const y = 120 - (val * 0.9);
+        if (i === 0) dCtx.moveTo(x, y);
+        else dCtx.lineTo(x, y);
+      });
+      dCtx.stroke();
+      dCtx.setLineDash([]);
+    }
+
+    function exportAuditCertificate() {
+      const element = document.getElementById("reportContent");
+      const opt = {
+        margin: 0.3,
+        filename: `Signify_Audit_Cert_${Date.now()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, backgroundColor: document.body.classList.contains("light-mode") ? '#ffffff' : '#0b1329' },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    async function clearAllHistory() {
+      if (confirm("Wipe all audit history logs?")) {
+        await fetch(`${API_BASE}/history`, { method: "DELETE" });
+        loadHistoryDashboard();
+      }
+    }
+
+    function renderDonutChart(genuine, forged) {
+      const ctx = document.getElementById("donutChart").getContext("2d");
+      if (donutChartInstance) donutChartInstance.destroy();
+
+      const total = genuine + forged;
+      donutChartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Genuine", "Forged"],
+          datasets: [{
+            data: total === 0 ? [1, 0] : [genuine, forged],
+            backgroundColor: total === 0 ? ["#334155", "#334155"] : ["#22c55e", "#ef4444"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom", labels: { color: "#94a3b8" } } },
+          cutout: "70%"
+        }
+      });
+    }
+
+    function renderTrendChart(logs) {
+      const ctx = document.getElementById("trendChart").getContext("2d");
+      if (trendChartInstance) trendChartInstance.destroy();
+
+      trendChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: logs.map(l => `#${l.id}`),
+          datasets: [{
+            label: "Match Score (%)",
+            data: logs.map(l => l.score),
+            borderColor: "#38bdf8",
+            backgroundColor: "rgba(56, 189, 248, 0.15)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: "#38bdf8"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "top", labels: { color: "#cbd5e1" } } },
+          scales: {
+            x: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(255,255,255,0.05)" } },
+            y: { min: 0, max: 100, ticks: { color: "#94a3b8" }, grid: { color: "rgba(255,255,255,0.05)" } }
+          }
+        }
+      });
+    }
+
+    function renderRadarChart(metric, keypoint, cnn, overall) {
+      const canvasElem = document.getElementById("radarChart");
+      if (!canvasElem) return;
+      const ctx = canvasElem.getContext("2d");
+      
+      if (radarChartInstance) {
+        radarChartInstance.destroy();
+        radarChartInstance = null;
+      }
+
+      const m = Number(metric) || 0;
+      const k = Number(keypoint) || 0;
+      const c = Number(cnn) || 0;
+      const o = Number(overall) || 0;
+
+      radarChartInstance = new Chart(ctx, {
+        type: "radar",
+        data: {
+          labels: ["Crest-Trough", "Harris Corner", "CNN Latent Sim", "Stroke Density", "Overall Alignment"],
+          datasets: [{
+            label: "Current Candidate Signature",
+            data: [m, k, c, Math.round((m + c) / 2), o],
+            backgroundColor: "rgba(56, 189, 248, 0.2)",
+            borderColor: "#38bdf8",
+            borderWidth: 2,
+            pointBackgroundColor: "#38bdf8"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              min: 0,
+              max: 100,
+              ticks: { display: false },
+              grid: { color: "rgba(255,255,255,0.1)" },
+              angleLines: { color: "rgba(255,255,255,0.1)" },
+              pointLabels: { color: "#94a3b8", font: { size: 10 } }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderProfileChart(labels, realCurve, questCurve) {
+      const canvasElem = document.getElementById("profileChart");
+      if (!canvasElem) return;
+      const ctx = canvasElem.getContext("2d");
+
+      if (profileChartInstance) {
+        profileChartInstance.destroy();
+        profileChartInstance = null;
+      }
+
+      const safeLabels = (labels && Array.isArray(labels) && labels.length > 0) 
+        ? labels 
+        : Array.from({ length: 40 }, (_, i) => `Pt ${i + 1}`);
+
+      const safeReal = (realCurve && Array.isArray(realCurve) && realCurve.length > 0)
+        ? realCurve.map(v => Number(v) || 0)
+        : new Array(40).fill(0);
+
+      const safeQuest = (questCurve && Array.isArray(questCurve) && questCurve.length > 0)
+        ? questCurve.map(v => Number(v) || 0)
+        : new Array(40).fill(0);
+
+      profileChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: safeLabels,
+          datasets: [
+            {
+              label: "Reference Profile",
+              data: safeReal,
+              borderColor: "#22c55e",
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.35
+            },
+            {
+              label: "Candidate Profile",
+              data: safeQuest,
+              borderColor: "#38bdf8",
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "top", labels: { color: "#cbd5e1", boxWidth: 10 } } },
+          scales: {
+            x: { ticks: { display: false }, grid: { color: "rgba(255,255,255,0.05)" } },
+            y: { min: 0, max: 100, ticks: { color: "#94a3b8" }, grid: { color: "rgba(255,255,255,0.05)" } }
+          }
+        }
+      });
+    }
+
+    function renderTable(logs) {
+      const tbody = document.getElementById("historyTableBody");
+      if (!logs || logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b;">No attempts recorded yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => {
+        const isReal = l.verdict && l.verdict.includes("GENUINE");
+        return `
+          <tr>
+            <td><strong>#${l.id}</strong></td>
+            <td>${l.timestamp}</td>
+            <td><span class="${isReal ? 'badge-real' : 'badge-fake'}">${l.verdict}</span></td>
+            <td><strong>${l.score}%</strong></td>
+            <td>${l.metric_confidence}%</td>
+            <td>${l.keypoint_confidence}%</td>
+            <td>${l.cnn_similarity || '-'}%</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  </script>
+</body>
+</html>
