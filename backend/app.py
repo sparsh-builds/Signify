@@ -12,14 +12,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import hashlib
 
-
-from preprocessing import full_preprocessing
 from features import (
     extract_crest_trough_metrics,
     extract_harris_and_orb_points,
     match_forgery_confidence,
     check_screen_spoof_fft,
+    estimate_pseudo_velocity_profile,
+    classify_pen_medium_and_substrate
 )
+
+from preprocessing import full_preprocessing
+
 from model import PaperSignatureCNN
 from document_utils import auto_extract_signature, encode_png
 from database import get_db, VerificationLog
@@ -423,6 +426,14 @@ async def compare_signatures(
     real_bytes = await real_signature.read()
     quest_bytes = await questioned_signature.read()
 
+    
+    quest_velocity = estimate_pseudo_velocity_profile(quest_processed, num_samples=40)
+    real_velocity = estimate_pseudo_velocity_profile(real_processed, num_samples=40)
+
+    # Feature 2: Pen Substrate Identification
+    pen_classification = classify_pen_medium_and_substrate(quest_processed)
+    
+    
     if questioned_mode == "photo":
         spoof_check = check_screen_spoof_fft(quest_bytes)
         if spoof_check["is_spoof"]:
@@ -437,7 +448,34 @@ async def compare_signatures(
                 "decision": f"SECURITY ALERT: Digital Screen Replay Detected (Moiré Score: {spoof_check['spoof_score']}%)",
                 "spoof_details": spoof_check,
                 "profiles": {"labels": [f"Pt {i+1}" for i in range(40)], "real": [0]*40, "quest": [0]*40},
-                "current_metrics": {}
+                "current_metrics": {},
+                
+                "pen_analysis": pen_classification,
+                "velocity_profile": {
+                "labels": [f"T{i+1}" for i in range(40)],
+                "real_v": real_velocity,
+                "quest_v": quest_velocity
+        },
+        "decision": f"{tier_config['label']}: " + ("APPROVED" if is_real else "REJECTED"),
+        "current_metrics": {
+            "real_len": round(real_metrics["len_ratio"] * 1000, 2),
+            "quest_len": round(quest_metrics["len_ratio"] * 1000, 2),
+            "real_width": round(real_metrics["width_ratio"] * 1000, 2),
+            "quest_width": round(quest_metrics["width_ratio"] * 1000, 2),
+            "real_ct": round(real_metrics["crest_trough_val"] * 100, 2),
+            "quest_ct": round(quest_metrics["crest_trough_val"] * 100, 2),
+            "real_corners": real_corners,
+            "quest_corners": quest_corners
+        },
+        "profiles": {
+            "labels": [f"Pt {i+1}" for i in range(40)],
+            "real": real_proj,
+            "quest": quest_proj
+        },
+        "detection": {
+            "real": real_detection,
+            "questioned": quest_detection
+        }
             }
 
     real_sig_bytes, real_prep_mode, real_detection = resolve_signature_image(
