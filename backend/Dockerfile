@@ -22,4 +22,4 @@ RUN mkdir -p /app/data
 EXPOSE 8000
 
 # 2 workers to fit safely within the 512MB RAM budget
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "2", "-b", "0.0.0.0:8000", "--timeout", "120", "app:app"]
+CMD ["uvicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "2", "-b", "0.0.0.0:8000", "--timeout", "120", "app:app"]
