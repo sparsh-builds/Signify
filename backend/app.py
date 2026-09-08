@@ -56,7 +56,6 @@ if os.path.exists(MODEL_WEIGHTS):
     except Exception as e:
         print(f"Notice: Loading initialized CNN architecture ({e})")
 else:
-    # Auto-generate baseline weights if not present so container never crashes
     try:
         torch.save(cnn_model.state_dict(), MODEL_WEIGHTS)
         print(f"Generated clean baseline weights file at: {MODEL_WEIGHTS}")
@@ -428,22 +427,14 @@ async def compare_signatures(
     real_bytes = await real_signature.read()
     quest_bytes = await questioned_signature.read()
 
-    
-    quest_velocity = estimate_pseudo_velocity_profile(quest_processed, num_samples=40)
-    real_velocity = estimate_pseudo_velocity_profile(real_processed, num_samples=40)
+    thresholds = {
+        "low": {"overall": 55.0, "metric": 0.50, "keypoint": 0.55, "label": "Low Risk (Attendance / Standard KYC)"},
+        "medium": {"overall": 65.0, "metric": 0.60, "keypoint": 0.70, "label": "Medium Risk (Cheques < 50k)"},
+        "high": {"overall": 78.0, "metric": 0.70, "keypoint": 0.80, "label": "High Risk (Property / High-Value RTGS)"}
+    }
+    tier_config = thresholds.get(risk_tier.lower(), thresholds["medium"])
 
-    # Feature 2: Pen Substrate Identification
-    pen_classification = classify_pen_medium_and_substrate(quest_processed)
-    
-    # Feature 1: Document Tamper & Eradication Check (ELA)
-    ela_result = compute_ela_heatmap(quest_bytes)
-
-    # Feature 2: ISO/IEC 19794-7 Compliance Scorecard
-    iso_scorecard = evaluate_iso_19794_7_compliance(quest_processed)
-    
-    
-    
-    
+    # 1. Anti-Spoofing Check
     if questioned_mode == "photo":
         spoof_check = check_screen_spoof_fft(quest_bytes)
         if spoof_check["is_spoof"]:
@@ -451,7 +442,7 @@ async def compare_signatures(
                 "verdict": "SPOOF (SCREEN REPLAY)",
                 "overall_score": 0.0,
                 "risk_tier": risk_tier.upper(),
-                "applied_threshold": 65.0,
+                "applied_threshold": tier_config["overall"],
                 "metric_confidence": 0.0,
                 "keypoint_confidence": 0.0,
                 "cnn_similarity": 0.0,
@@ -459,37 +450,11 @@ async def compare_signatures(
                 "spoof_details": spoof_check,
                 "profiles": {"labels": [f"Pt {i+1}" for i in range(40)], "real": [0]*40, "quest": [0]*40},
                 "current_metrics": {},
-                "ela_analysis": ela_result,
-        "iso_compliance": iso_scorecard,
-        
-                "pen_analysis": pen_classification,
-                "velocity_profile": {
-                "labels": [f"T{i+1}" for i in range(40)],
-                "real_v": real_velocity,
-                "quest_v": quest_velocity
-        },
-        "decision": f"{tier_config['label']}: " + ("APPROVED" if is_real else "REJECTED"),
-        "current_metrics": {
-            "real_len": round(real_metrics["len_ratio"] * 1000, 2),
-            "quest_len": round(quest_metrics["len_ratio"] * 1000, 2),
-            "real_width": round(real_metrics["width_ratio"] * 1000, 2),
-            "quest_width": round(quest_metrics["width_ratio"] * 1000, 2),
-            "real_ct": round(real_metrics["crest_trough_val"] * 100, 2),
-            "quest_ct": round(quest_metrics["crest_trough_val"] * 100, 2),
-            "real_corners": real_corners,
-            "quest_corners": quest_corners
-        },
-        "profiles": {
-            "labels": [f"Pt {i+1}" for i in range(40)],
-            "real": real_proj,
-            "quest": quest_proj
-        },
-        "detection": {
-            "real": real_detection,
-            "questioned": quest_detection
-        }
+                "ela_analysis": {"tamper_detected": False, "mean_error": 0.0, "max_error": 0.0},
+                "iso_compliance": {"passed_all": False, "compliance_score": 0, "criteria": []}
             }
 
+    # 2. Extract and Preprocess (Definitions are safely established first)
     real_sig_bytes, real_prep_mode, real_detection = resolve_signature_image(
         real_bytes, real_mode, real_crop_box
     )
@@ -503,6 +468,14 @@ async def compare_signatures(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Image decoding/preprocessing error: {str(e)}")
 
+    # 3. Advanced Forensic Add-Ons
+    quest_velocity = estimate_pseudo_velocity_profile(quest_processed, num_samples=40)
+    real_velocity = estimate_pseudo_velocity_profile(real_processed, num_samples=40)
+    pen_classification = classify_pen_medium_and_substrate(quest_processed)
+    ela_result = compute_ela_heatmap(quest_bytes)
+    iso_scorecard = evaluate_iso_19794_7_compliance(quest_processed)
+
+    # 4. Feature Extraction & Verification Calculations
     real_metrics = extract_crest_trough_metrics(real_processed)
     quest_metrics = extract_crest_trough_metrics(quest_processed)
 
@@ -519,18 +492,6 @@ async def compare_signatures(
     cnn_sim = compute_cnn_similarity(real_cnn, quest_cnn)
 
     overall_score = round(((metric_conf * 0.35) + (keypoint_conf * 0.35) + (cnn_sim * 0.30)) * 100, 1)
-    
-    # Generate enterprise-grade SHA-256 audit seal
-    raw_payload = f"{hashlib.sha256(real_bytes).hexdigest()}:{hashlib.sha256(quest_bytes).hexdigest()}:{overall_score}:{verdict_str}:{datetime.utcnow().isoformat()}"
-    audit_hash = hashlib.sha256(raw_payload.encode("utf-8")).hexdigest()
-    
-
-    thresholds = {
-        "low": {"overall": 55.0, "metric": 0.50, "keypoint": 0.55, "label": "Low Risk (Attendance / Standard KYC)"},
-        "medium": {"overall": 65.0, "metric": 0.60, "keypoint": 0.70, "label": "Medium Risk (Cheques < 50k)"},
-        "high": {"overall": 78.0, "metric": 0.70, "keypoint": 0.80, "label": "High Risk (Property / High-Value RTGS)"}
-    }
-    tier_config = thresholds.get(risk_tier.lower(), thresholds["medium"])
 
     is_real = (
         (overall_score >= tier_config["overall"]) and
@@ -539,9 +500,14 @@ async def compare_signatures(
     )
     verdict_str = "GENUINE (REAL)" if is_real else "FORGED (FAKE)"
 
+    # Generate enterprise SHA-256 audit seal
+    raw_payload = f"{hashlib.sha256(real_bytes).hexdigest()}:{hashlib.sha256(quest_bytes).hexdigest()}:{overall_score}:{verdict_str}:{datetime.utcnow().isoformat()}"
+    audit_hash = hashlib.sha256(raw_payload.encode("utf-8")).hexdigest()
+
     real_proj = extract_raw_projection(real_processed, num_bins=40)
     quest_proj = extract_raw_projection(quest_processed, num_bins=40)
 
+    # 5. History Logging
     history = get_history()
     log_entry = {
         "id": len(history) + 1,
@@ -586,6 +552,14 @@ async def compare_signatures(
         "keypoint_confidence": round(keypoint_conf * 100, 1),
         "cnn_similarity": round(cnn_sim * 100, 1),
         "audit_hash": audit_hash,
+        "ela_analysis": ela_result,
+        "iso_compliance": iso_scorecard,
+        "pen_analysis": pen_classification,
+        "velocity_profile": {
+            "labels": [f"T{i+1}" for i in range(40)],
+            "real_v": real_velocity,
+            "quest_v": quest_velocity
+        },
         "decision": f"{tier_config['label']}: " + ("APPROVED" if is_real else "REJECTED"),
         "current_metrics": {
             "real_len": round(real_metrics["len_ratio"] * 1000, 2),
