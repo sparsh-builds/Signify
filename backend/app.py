@@ -10,6 +10,8 @@ from typing import Optional, List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+import hashlib
+
 
 from preprocessing import full_preprocessing
 from features import (
@@ -467,6 +469,11 @@ async def compare_signatures(
     cnn_sim = compute_cnn_similarity(real_cnn, quest_cnn)
 
     overall_score = round(((metric_conf * 0.35) + (keypoint_conf * 0.35) + (cnn_sim * 0.30)) * 100, 1)
+    
+    # Generate enterprise-grade SHA-256 audit seal
+    raw_payload = f"{hashlib.sha256(real_bytes).hexdigest()}:{hashlib.sha256(quest_bytes).hexdigest()}:{overall_score}:{verdict_str}:{datetime.utcnow().isoformat()}"
+    audit_hash = hashlib.sha256(raw_payload.encode("utf-8")).hexdigest()
+    
 
     thresholds = {
         "low": {"overall": 55.0, "metric": 0.50, "keypoint": 0.55, "label": "Low Risk (Attendance / Standard KYC)"},
@@ -528,6 +535,7 @@ async def compare_signatures(
         "metric_confidence": round(metric_conf * 100, 1),
         "keypoint_confidence": round(keypoint_conf * 100, 1),
         "cnn_similarity": round(cnn_sim * 100, 1),
+        "audit_hash": audit_hash,
         "decision": f"{tier_config['label']}: " + ("APPROVED" if is_real else "REJECTED"),
         "current_metrics": {
             "real_len": round(real_metrics["len_ratio"] * 1000, 2),

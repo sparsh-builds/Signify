@@ -307,6 +307,28 @@
       </div>
     </div>
 
+
+
+    <!-- Interactive Forensic Overlay & Blink Tool -->
+<div class="card full-width" id="overlayInspector" style="display: none; margin-top: 15px;">
+  <h3>Interactive Micro-Alignment Inspector (Blink Comparator)</h3>
+  <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+    <div style="flex: 1; min-width: 240px;">
+      <label for="alphaSlider">Ghost Opacity: <span id="alphaVal">50%</span></label>
+      <input type="range" id="alphaSlider" min="0" max="100" value="50" style="width: 100%; cursor: pointer;" oninput="updateGhostOpacity(this.value)">
+    </div>
+    <div style="display: flex; gap: 10px; align-items: flex-end;">
+      <button type="button" id="btnBlink" class="main-btn btn-primary" style="padding: 8px 16px;" onclick="toggleBlinkComparator()">⚡ Toggle Blink Comparator</button>
+    </div>
+    <div style="flex-basis: 100%; font-family: monospace; font-size: 0.8rem; color: var(--primary-blue); background: var(--bg-input); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto;">
+      SHA-256 Audit Seal: <span id="auditHashDisplay" style="color: #4ade80;">Pending verification...</span>
+    </div>
+  </div>
+  <div style="display: flex; justify-content: center; background: #0b1329; border-radius: 8px; padding: 12px; border: 1px solid var(--border-color);">
+    <canvas id="overlayCanvas" width="600" height="200" style="max-width: 100%; height: auto; background: #ffffff; border-radius: 4px;"></canvas>
+  </div>
+</div>
+
     <!-- Analytics Dashboard Charts Grid -->
     <div class="charts-grid">
       <div class="card">
@@ -660,6 +682,15 @@
       dCtx.stroke();
       dCtx.setLineDash([]);
     }
+    
+
+
+    // Grab image sources from existing preview elements
+const realSrc = document.getElementById(document.getElementById('tabDraw').classList.contains('active') ? 'drawRefImg' : 'compRealImg').src;
+const questSrc = document.getElementById(document.getElementById('tabDraw').classList.contains('active') ? 'pad' : 'compTestImg').src || canvas.toDataURL();
+
+initGhostOverlay(realSrc, questSrc, data.audit_hash);
+
 
     function exportAuditCertificate() {
       const element = document.getElementById("reportContent");
@@ -875,6 +906,74 @@
         `;
       }).join("");
     }
+
+
+    let blinkInterval = null;
+let cachedRealMat = null;
+let cachedQuestMat = null;
+
+function initGhostOverlay(realImgSrc, questImgSrc, auditHash) {
+  const inspector = document.getElementById("overlayInspector");
+  inspector.style.display = "block";
+  document.getElementById("auditHashDisplay").innerText = auditHash || "N/A";
+
+  const img1 = new Image();
+  const img2 = new Image();
+  let loaded = 0;
+
+  const onLoaded = () => {
+    loaded++;
+    if (loaded === 2) {
+      cachedRealMat = img1;
+      cachedQuestMat = img2;
+      drawGhostComposite(0.5);
+    }
+  };
+
+  img1.onload = onLoaded;
+  img2.onload = onLoaded;
+  img1.src = realImgSrc;
+  img2.src = questImgSrc;
+}
+
+function drawGhostComposite(alpha) {
+  const canvas = document.getElementById("overlayCanvas");
+  if (!canvas || !cachedRealMat || !cachedQuestMat) return;
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Render base reference signature in emerald green tint
+  ctx.globalAlpha = 1.0;
+  ctx.drawImage(cachedRealMat, 0, 0, canvas.width, canvas.height);
+
+  // Blend questioning candidate signature with dynamic alpha
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(cachedQuestMat, 0, 0, canvas.width, canvas.height);
+  ctx.globalAlpha = 1.0;
+}
+
+function updateGhostOpacity(val) {
+  document.getElementById("alphaVal").innerText = `${val}%`;
+  drawGhostComposite(val / 100);
+}
+
+function toggleBlinkComparator() {
+  const btn = document.getElementById("btnBlink");
+  if (blinkInterval) {
+    clearInterval(blinkInterval);
+    blinkInterval = null;
+    btn.innerText = "⚡ Toggle Blink Comparator";
+    drawGhostComposite(document.getElementById("alphaSlider").value / 100);
+  } else {
+    btn.innerText = "🛑 Stop Blink";
+    let toggle = false;
+    blinkInterval = setInterval(() => {
+      drawGhostComposite(toggle ? 1.0 : 0.0);
+      toggle = !toggle;
+    }, 250); // 4Hz blink frequency for perceptual edge-shift detection
+  }
+}
   </script>
 </body>
 </html>
