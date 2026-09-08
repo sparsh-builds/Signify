@@ -18,7 +18,9 @@ from features import (
     match_forgery_confidence,
     check_screen_spoof_fft,
     estimate_pseudo_velocity_profile,
-    classify_pen_medium_and_substrate
+    classify_pen_medium_and_substrate,
+    compute_ela_heatmap,
+    evaluate_iso_19794_7_compliance
 )
 
 from preprocessing import full_preprocessing
@@ -433,6 +435,14 @@ async def compare_signatures(
     # Feature 2: Pen Substrate Identification
     pen_classification = classify_pen_medium_and_substrate(quest_processed)
     
+    # Feature 1: Document Tamper & Eradication Check (ELA)
+    ela_result = compute_ela_heatmap(quest_bytes)
+
+    # Feature 2: ISO/IEC 19794-7 Compliance Scorecard
+    iso_scorecard = evaluate_iso_19794_7_compliance(quest_processed)
+    
+    
+    
     
     if questioned_mode == "photo":
         spoof_check = check_screen_spoof_fft(quest_bytes)
@@ -449,7 +459,9 @@ async def compare_signatures(
                 "spoof_details": spoof_check,
                 "profiles": {"labels": [f"Pt {i+1}" for i in range(40)], "real": [0]*40, "quest": [0]*40},
                 "current_metrics": {},
-                
+                "ela_analysis": ela_result,
+        "iso_compliance": iso_scorecard,
+        
                 "pen_analysis": pen_classification,
                 "velocity_profile": {
                 "labels": [f"T{i+1}" for i in range(40)],

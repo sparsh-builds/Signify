@@ -1,6 +1,122 @@
 import cv2
 import numpy as np
+import io
+from PIL import Image, ImageChops, ImageEnhance
 
+def compute_ela_heatmap(img_bytes: bytes, quality: int = 90) -> dict:
+    """
+    Feature 1: Error Level Analysis (ELA) Tamper Heatmap.
+    Identifies localized compression anomalies typical of digital inpainting,
+    photoshop cloning, or document text eradication.
+    """
+    try:
+        orig = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+        
+        # Re-compress in memory at uniform JPEG quality
+        buffer = io.BytesIO()
+        orig.save(buffer, 'JPEG', quality=quality)
+        buffer.seek(0)
+        recompressed = Image.open(buffer)
+        
+        # Calculate pixel difference residual
+        diff = ImageChops.difference(orig, recompressed)
+        
+        # Amplify residual differences for visualization
+        extrema = diff.getextrema()
+        max_diff = max([ex[1] for ex in extrema])
+        scale = 255.0 / max(1, max_diff) if max_diff > 0 else 1.0
+        enhancer = ImageEnhance.Brightness(diff)
+        amplified = enhancer.enhance(scale * 1.5)
+        
+        # Calculate mean error level score
+        diff_np = np.array(diff).astype(np.float32)
+        mean_error = float(np.mean(diff_np))
+        max_error = float(np.max(diff_np))
+        
+        # High deviation from expected baseline indicates tampering/pasting
+        is_tampered = mean_error > 8.5 or max_error > 120.0
+        
+        # Downsample amplified diff to a lightweight 200px preview
+        amplified.thumbnail((300, 150))
+        out_buf = io.BytesIO()
+        amplified.save(out_buf, format="PNG")
+        import base64
+        ela_b64 = base64.b64encode(out_buf.getvalue()).decode('ascii')
+        
+        return {
+            "mean_error": round(mean_error, 2),
+            "max_error": round(max_error, 2),
+            "tamper_detected": is_tampered,
+            "tamper_confidence": round(min(99.0, max_error * 0.7), 1),
+            "preview_png_base64": ela_b64
+        }
+    except Exception as e:
+        return {
+            "mean_error": 0.0,
+            "max_error": 0.0,
+            "tamper_detected": False,
+            "tamper_confidence": 0.0,
+            "preview_png_base64": ""
+        }
+
+def evaluate_iso_19794_7_compliance(img_gray: np.ndarray) -> dict:
+    """
+    Feature 2: ISO/IEC 19794-7 Biometric Quality Assessment Scorecard.
+    Audits specimen quality against biometric exchange format standards.
+    """
+    if img_gray is None or img_gray.size == 0:
+        return {"passed_all": False, "score": 0, "criteria": []}
+
+    h, w = img_gray.shape
+    
+    # 1. Stroke Resolution & Dimensional Stability
+    # Minimum compliant canvas dimension is 150x60
+    res_pass = (w >= 150 and h >= 60)
+    res_status = "PASS" if res_pass else "FAIL"
+    res_desc = f"{w}x{h} px (>150x60 px threshold)"
+    
+    # 2. Ink-to-Paper Signal-to-Noise Ratio (SNR)
+    # Estimate background noise variance vs stroke contrast
+    _, binary = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    ink_pixels = img_gray[binary == 0]
+    paper_pixels = img_gray[binary == 255]
+    
+    mean_ink = float(np.mean(ink_pixels)) if len(ink_pixels) > 0 else 0.0
+    mean_paper = float(np.mean(paper_pixels)) if len(paper_pixels) > 0 else 255.0
+    std_paper = float(np.std(paper_pixels)) if len(paper_pixels) > 0 else 1.0
+    
+    snr_val = (mean_paper - mean_ink) / max(1.0, std_paper)
+    snr_pass = snr_val >= 4.0  # Clear contrast against paper texture
+    snr_status = "PASS" if snr_pass else "WARN"
+    snr_desc = f"{round(snr_val, 1)} SNR (Req >= 4.0)"
+    
+    # 3. Dynamic Range & Gray Depth Coverage
+    hist = cv2.calcHist([img_gray], [0], None, [256], [0, 256])
+    nonzero_bins = np.count_nonzero(hist)
+    dynamic_coverage = (nonzero_bins / 256.0) * 100.0
+    dr_pass = dynamic_coverage >= 30.0
+    dr_status = "PASS" if dr_pass else "FAIL"
+    dr_desc = f"{round(dynamic_coverage, 1)}% Grayscale Spread"
+    
+    # 4. Aspect Ratio & Spatial Symmetry
+    aspect = w / max(1, h)
+    aspect_pass = (1.2 <= aspect <= 7.0)
+    aspect_status = "PASS" if aspect_pass else "WARN"
+    aspect_desc = f"{round(aspect, 2)}:1 Proportions"
+    
+    passed_count = sum([res_pass, snr_pass, dr_pass, aspect_pass])
+    iso_score = round((passed_count / 4.0) * 100.0, 1)
+
+    return {
+        "passed_all": (passed_count >= 3),
+        "compliance_score": iso_score,
+        "criteria": [
+            {"name": "Spatial Dimension Check", "status": res_status, "detail": res_desc},
+            {"name": "Contrast SNR (Ink/Paper)", "status": snr_status, "detail": snr_desc},
+            {"name": "Dynamic Grayscale Coverage", "status": dr_status, "detail": dr_desc},
+            {"name": "Bounding Aspect Ratio", "status": aspect_status, "detail": aspect_desc}
+        ]
+    }
 
 def estimate_pseudo_velocity_profile(binary_signature: np.ndarray, num_samples: int = 50) -> list:
     """

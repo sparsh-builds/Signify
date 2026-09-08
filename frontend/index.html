@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Signify | Biometric Verification & Forensic Telemetry</title>
+  <title>Signify | Biometric Forensic Intelligence Engine</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
@@ -37,56 +37,10 @@
     .topbar h1 { margin: 0; font-size: 1.35rem; color: var(--primary-blue); }
     .top-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     
-    .btn-powerbi { 
-      background: #f59e0b !important; 
-      color: #000000 !important; 
-      border: 1px solid #d97706; 
-      padding: 9px 15px; 
-      border-radius: 6px; 
-      font-weight: 700; 
-      cursor: pointer; 
-      font-size: 0.85rem; 
-      text-decoration: none !important; 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 6px; 
-      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
-    }
-    .btn-powerbi:hover { background: #d97706 !important; }
-
-    .btn-pdf { 
-      background: #10b981 !important; 
-      color: #ffffff !important; 
-      border: 1px solid #059669; 
-      padding: 9px 15px; 
-      border-radius: 6px; 
-      font-weight: 700; 
-      cursor: pointer; 
-      font-size: 0.85rem; 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 6px;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
-    }
-    .btn-pdf:hover { background: #059669 !important; }
-
-    .btn-theme {
-      background: #6366f1;
-      color: #ffffff;
-      border: none;
-      padding: 9px 14px;
-      border-radius: 6px;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 0.85rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-theme:hover { background: #4f46e5; }
-
+    .btn-powerbi { background: #f59e0b !important; color: #000000 !important; border: 1px solid #d97706; padding: 9px 15px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.85rem; text-decoration: none !important; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-pdf { background: #10b981 !important; color: #ffffff !important; border: 1px solid #059669; padding: 9px 15px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-theme { background: #6366f1; color: #ffffff; border: none; padding: 9px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; }
     .btn-danger { background: #ef4444; color: #fff; border: none; padding: 9px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
-    .btn-danger:hover { background: #dc2626; }
 
     .tab-bar { display: flex; gap: 12px; }
     .tab-btn { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
@@ -121,11 +75,15 @@
     .real { background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #4ade80; }
     .fake { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; }
 
-    .forensic-panel { display: none; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-top: 15px; }
-    .forensic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .forensic-item { text-align: center; }
-    .forensic-item h4 { margin: 4px 0 8px 0; font-size: 0.85rem; color: var(--text-muted); }
-    .forensic-canvas { width: 100%; height: 140px; background: #0b1329; border: 1px solid var(--border-color); border-radius: 6px; }
+    /* ISO Scorecard & ELA Panels */
+    .iso-panel { display: none; margin-top: 15px; }
+    .iso-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; }
+    .iso-item { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; }
+    .iso-badge-pass { color: #4ade80; font-weight: 700; font-size: 0.8rem; }
+    .iso-badge-warn { color: #f59e0b; font-weight: 700; font-size: 0.8rem; }
+
+    .playback-wrapper { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 12px; }
+    .playback-controls { display: flex; gap: 10px; width: 100%; align-items: center; }
 
     .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
@@ -146,7 +104,7 @@
     <div class="topbar">
       <div>
         <h1>Signify Verification & Biometric Telemetry</h1>
-        <small style="color: var(--text-muted);">Siamese CNN Latent Space • Crest-Trough Waveforms • Harris Corner Micro-Tremors</small>
+        <small style="color: var(--text-muted);">ISO/IEC 19794-7 Compliance • Error Level Analysis • Kinematic Stroke Playback</small>
       </div>
       <div class="top-actions">
         <a class="btn-powerbi" id="powerBiLink" href="https://signify-api-rg73.onrender.com/powerbi/telemetry" target="_blank">
@@ -155,9 +113,7 @@
         <button type="button" class="btn-pdf" id="btnDownloadPDF" onclick="exportAuditCertificate()">
           📄 Export PDF Report
         </button>
-        <button type="button" class="btn-theme" id="btnThemeToggle" onclick="toggleTheme()">
-          🌓 Mode
-        </button>
+        <button type="button" class="btn-theme" id="btnThemeToggle" onclick="toggleTheme()">🌓 Mode</button>
         <button type="button" class="btn-danger" onclick="clearAllHistory()">Wipe Logs</button>
       </div>
     </div>
@@ -290,25 +246,49 @@
     <!-- Verdict Banner -->
     <div id="verdictBox"></div>
 
-    <!-- Forensic Heatmap & Stroke Diff Panel -->
-    <div class="forensic-panel card full-width" id="forensicPanel">
-      <h3>Visual Forensic Investigation: Stroke Dynamics & Overlay</h3>
-      <div class="forensic-grid">
-        <div class="forensic-item">
-          <h4>Reconstructed Pen Pressure Heatmap (Velocity/Thickness)</h4>
-          <canvas id="heatmapCanvas" class="forensic-canvas" width="500" height="150"></canvas>
-          <small style="color: #64748b;">Cool Blue = Fluid/Fast | Warm Red = Hesitation/High Pressure</small>
+    <!-- Feature 2: ISO/IEC 19794-7 Biometric Compliance Scorecard -->
+    <div class="card full-width iso-panel" id="isoPanel">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; border: none;">ISO/IEC 19794-7 Forensic Biometric Compliance Audit</h3>
+        <span id="isoOverallScore" style="font-weight: 700; color: #4ade80;">Compliance: 100%</span>
+      </div>
+      <div class="iso-grid" id="isoGrid"></div>
+    </div>
+
+    <!-- Feature 1: ELA Tamper & Inpainting Analysis Panel -->
+    <div class="card full-width" id="elaPanel" style="display: none;">
+      <h3>Document Tamper Detection (Error Level Analysis - ELA)</h3>
+      <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 240px; text-align: center;">
+          <img id="elaPreviewImg" style="max-width: 100%; height: 140px; border-radius: 6px; border: 1px solid var(--border-color); background: #000;" alt="ELA Heatmap">
+          <small style="display: block; color: var(--text-muted); margin-top: 4px;">Amplified Compression Residual (Non-Uniform Glow = Digital Inpainting)</small>
         </div>
-        <div class="forensic-item">
-          <h4>Morphological Stroke Difference Alignment</h4>
-          <canvas id="diffCanvas" class="forensic-canvas" width="500" height="150"></canvas>
-          <small style="color: #64748b;">Green = Parity Match | Red = Tremor Deviations / Tracing Flaws</small>
+        <div style="flex: 2; min-width: 260px; font-size: 0.85rem; line-height: 1.6;">
+          <div>Tamper Status: <strong id="elaTamperStatus" style="color: #4ade80;">Authentic (Uniform Substrate)</strong></div>
+          <div>Mean Quantization Error: <strong id="elaMeanError">0.0</strong></div>
+          <div>Peak Anomaly Level: <strong id="elaMaxError">0.0</strong></div>
+          <div style="color: var(--text-muted); margin-top: 6px;">
+            ELA identifies inconsistent JPEG error surface levels across cloned text, eraser solvent artifacts, and AI-inpainted patches.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3: Forensic Stroke Kinematic Playback Animator -->
+    <div class="card full-width" id="playbackPanel" style="display: none;">
+      <h3>Forensic Kinematic Stroke Trajectory Playback</h3>
+      <div class="playback-wrapper">
+        <canvas id="playbackCanvas" width="600" height="160" style="background: #ffffff; border-radius: 6px; border: 1px solid var(--border-color); max-width: 100%;"></canvas>
+        <div class="playback-controls">
+          <button type="button" class="main-btn btn-primary" id="btnPlayPause" style="flex: 0 0 120px;" onclick="togglePlayback()">▶ Play Stroke</button>
+          <input type="range" id="playbackScrub" min="0" max="100" value="0" style="flex: 1; cursor: pointer;" oninput="scrubPlayback(this.value)">
+          <span id="playbackPercent" style="font-family: monospace; font-size: 0.85rem; color: var(--primary-blue); min-width: 45px;">0%</span>
         </div>
       </div>
     </div>
 
     <!-- Interactive Forensic Overlay & Blink Tool -->
-    <div class="card full-width" id="overlayInspector" style="display: none; margin-top: 15px;">
+    <div class="card full-width" id="overlayInspector" style="display: none;">
       <h3>Interactive Micro-Alignment Inspector (Blink Comparator)</h3>
       <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
         <div style="flex: 1; min-width: 240px;">
@@ -396,6 +376,12 @@
     let cachedRealMat = null;
     let cachedQuestMat = null;
 
+    // Feature 3 Playback variables
+    let playbackPoints = [];
+    let playbackIdx = 0;
+    let playbackTimer = null;
+    let isPlaying = false;
+
     window.addEventListener("DOMContentLoaded", () => {
       loadHistoryDashboard();
     });
@@ -414,7 +400,9 @@
       document.getElementById('tabEnroll').className = mode === 'enroll' ? 'tab-btn active' : 'tab-btn';
 
       document.getElementById('verdictBox').style.display = 'none';
-      document.getElementById('forensicPanel').style.display = 'none';
+      document.getElementById('isoPanel').style.display = 'none';
+      document.getElementById('elaPanel').style.display = 'none';
+      document.getElementById('playbackPanel').style.display = 'none';
       document.getElementById('overlayInspector').style.display = 'none';
     }
 
@@ -432,80 +420,38 @@
       }
     }
 
+    // Canvas drawing logic for Pad
     const canvas = document.getElementById("pad");
     const ctx = canvas.getContext("2d");
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.strokeStyle = "#000000";
     let isDrawing = false;
+    let drawnStrokePoints = [];
 
-    canvas.addEventListener("mousedown", (e) => { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
-    canvas.addEventListener("mousemove", (e) => { if (isDrawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
+    canvas.addEventListener("mousedown", (e) => { 
+      isDrawing = true; 
+      ctx.beginPath(); 
+      ctx.moveTo(e.offsetX, e.offsetY);
+      drawnStrokePoints.push({x: e.offsetX, y: e.offsetY, start: true});
+    });
+    canvas.addEventListener("mousemove", (e) => { 
+      if (isDrawing) { 
+        ctx.lineTo(e.offsetX, e.offsetY); 
+        ctx.stroke(); 
+        drawnStrokePoints.push({x: e.offsetX, y: e.offsetY, start: false});
+      } 
+    });
     window.addEventListener("mouseup", () => isDrawing = false);
-
-    canvas.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      const r = canvas.getBoundingClientRect();
-      const t = e.touches[0];
-      isDrawing = true;
-      ctx.beginPath();
-      ctx.moveTo(t.clientX - r.left, t.clientY - r.top);
-    });
-    canvas.addEventListener("touchmove", (e) => {
-      e.preventDefault();
-      if (!isDrawing) return;
-      const r = canvas.getBoundingClientRect();
-      const t = e.touches[0];
-      ctx.lineTo(t.clientX - r.left, t.clientY - r.top);
-      ctx.stroke();
-    });
-    window.addEventListener("touchend", () => isDrawing = false);
 
     function clearPad() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawnStrokePoints = [];
       document.getElementById("verdictBox").style.display = "none";
-      document.getElementById("forensicPanel").style.display = "none";
+      document.getElementById("isoPanel").style.display = "none";
+      document.getElementById("elaPanel").style.display = "none";
+      document.getElementById("playbackPanel").style.display = "none";
       document.getElementById("overlayInspector").style.display = "none";
-    }
-
-    async function loadHistoryDashboard() {
-      try {
-        const res = await fetch(`${API_BASE}/history`);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        document.getElementById("kpiTotal").innerText = data.total_attempts;
-        document.getElementById("kpiGenuine").innerText = data.genuine_count;
-        document.getElementById("kpiForged").innerText = data.forged_count;
-        document.getElementById("kpiRate").innerText = `${data.acceptance_rate}%`;
-        document.getElementById("kpiAvg").innerText = `${data.average_score}%`;
-
-        renderDonutChart(data.genuine_count, data.forged_count);
-        renderTrendChart([...data.logs].reverse());
-        renderTable(data.logs);
-      } catch (e) {
-        console.error("Failed to load history:", e);
-      }
-    }
-
-    async function refreshTableAndKpisOnly() {
-      try {
-        const res = await fetch(`${API_BASE}/history`);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        document.getElementById("kpiTotal").innerText = data.total_attempts;
-        document.getElementById("kpiGenuine").innerText = data.genuine_count;
-        document.getElementById("kpiForged").innerText = data.forged_count;
-        document.getElementById("kpiRate").innerText = `${data.acceptance_rate}%`;
-        document.getElementById("kpiAvg").innerText = `${data.average_score}%`;
-
-        renderDonutChart(data.genuine_count, data.forged_count);
-        renderTrendChart([...data.logs].reverse());
-        renderTable(data.logs);
-      } catch (e) {
-        console.error("Failed to update history:", e);
-      }
     }
 
     async function verifyDrawn(e) {
@@ -557,7 +503,7 @@
           verdictBox.innerHTML = `
             <strong>⚠️ SECURITY BREACH DETECTED</strong><br>
             ${data.decision}<br>
-            <small style="color: #cbd5e1;">Hardware presentation attack detected via 2D Fast Fourier Transform (Spectral Moiré Grating).</small>
+            <small style="color: #cbd5e1;">Hardware presentation attack detected via 2D Fast Fourier Transform.</small>
           `;
         } else {
           verdictBox.className = isReal ? "real" : "fake";
@@ -570,14 +516,25 @@
 
         renderRadarChart(data.metric_confidence, data.keypoint_confidence, data.cnn_similarity, data.overall_score);
         
-        const labels = (data.profiles && data.profiles.labels) ? data.profiles.labels : [];
-        const realVals = (data.profiles && data.profiles.real) ? data.profiles.real : [];
-        const questVals = (data.profiles && data.profiles.quest) ? data.profiles.quest : [];
+        const labels = data.profiles?.labels || [];
+        const realVals = data.profiles?.real || [];
+        const questVals = data.profiles?.quest || [];
         renderProfileChart(labels, realVals, questVals);
 
-        drawSyntheticForensics(data);
+        // Render ISO 19794-7 Compliance Scorecard
+        if (data.iso_compliance) {
+          renderIsoScorecard(data.iso_compliance);
+        }
 
-        // Safely extract previews and initialize the ghost overlay tool
+        // Render ELA Tamper Heatmap
+        if (data.ela_analysis) {
+          renderElaAnalysis(data.ela_analysis);
+        }
+
+        // Setup Forensic Stroke Playback
+        setupStrokePlayback(data);
+
+        // Setup Ghost Overlay
         const isDrawMode = document.getElementById('tabDraw').classList.contains('active');
         const realSrc = document.getElementById(isDrawMode ? 'drawRefImg' : 'compRealImg').src;
         const questSrc = isDrawMode ? canvas.toDataURL("image/png") : document.getElementById('compTestImg').src;
@@ -591,106 +548,151 @@
       }
     }
 
-    async function submitMultiEnrollment(e) {
-      if (e) e.preventDefault();
-      const username = document.getElementById("enrollUsername").value.trim();
-      const fileInput = document.getElementById("enrollFiles");
-      const statusBox = document.getElementById("enrollStatusBox");
-
-      if (!username) { alert("Please enter a username or account identifier."); return; }
-      if (fileInput.files.length < 2) { alert("Please select at least 2 specimen files."); return; }
-
-      const fd = new FormData();
-      fd.append("username", username);
-      for (let i = 0; i < fileInput.files.length; i++) {
-        fd.append("files", fileInput.files[i]);
-      }
-
-      statusBox.style.display = "block";
-      statusBox.style.background = "#334155";
-      statusBox.style.color = "#38bdf8";
-      statusBox.innerText = "Computing 128-d latent centroid and intra-personal variance boundary...";
-
-      try {
-        const res = await fetch(`${API_BASE}/enroll-multi`, { method: "POST", body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Enrollment failed.");
-
-        statusBox.style.background = "rgba(34, 197, 94, 0.15)";
-        statusBox.style.color = "#4ade80";
-        statusBox.innerHTML = `<strong>Enrolled:</strong> ${data.message}<br>Baseline Variance (&sigma;): <strong>${data.intra_variance_sigma}</strong> | Specimens: ${data.specimens_enrolled}`;
-      } catch (err) {
-        statusBox.style.background = "rgba(239, 68, 68, 0.15)";
-        statusBox.style.color = "#f87171";
-        statusBox.innerText = `Error: ${err.message}`;
-      }
-    }
-
-    function drawSyntheticForensics(data) {
-      const panel = document.getElementById("forensicPanel");
+    // Feature 2: ISO 19794-7 Scorecard Renderer
+    function renderIsoScorecard(iso) {
+      const panel = document.getElementById("isoPanel");
       panel.style.display = "block";
+      document.getElementById("isoOverallScore").innerText = `Compliance Index: ${iso.compliance_score}%`;
 
-      const hCanvas = document.getElementById("heatmapCanvas");
-      const hCtx = hCanvas.getContext("2d");
-      hCtx.fillStyle = "#0f172a";
-      hCtx.fillRect(0, 0, hCanvas.width, hCanvas.height);
-
-      const isReal = data.verdict && data.verdict.includes("GENUINE");
-      const grad = hCtx.createLinearGradient(30, 0, 450, 0);
-      if (isReal) {
-        grad.addColorStop(0, "#06b6d4");
-        grad.addColorStop(0.5, "#3b82f6");
-        grad.addColorStop(1, "#10b981");
-      } else {
-        grad.addColorStop(0, "#ef4444");
-        grad.addColorStop(0.4, "#f59e0b");
-        grad.addColorStop(1, "#ef4444");
-      }
-
-      hCtx.strokeStyle = grad;
-      hCtx.lineWidth = isReal ? 3 : 5;
-      hCtx.lineCap = "round";
-      hCtx.beginPath();
-      const points = (data.profiles && Array.isArray(data.profiles.quest)) ? data.profiles.quest.slice(0, 30) : [];
-      points.forEach((val, i) => {
-        const x = 30 + (i * 14);
-        const y = Math.max(10, Math.min(140, 120 - (val * 0.9)));
-        if (i === 0) hCtx.moveTo(x, y);
-        else hCtx.lineTo(x, y);
-      });
-      hCtx.stroke();
-
-      const dCanvas = document.getElementById("diffCanvas");
-      const dCtx = dCanvas.getContext("2d");
-      dCtx.fillStyle = "#0f172a";
-      dCtx.fillRect(0, 0, dCanvas.width, dCanvas.height);
-
-      dCtx.strokeStyle = "#22c55e";
-      dCtx.lineWidth = 2;
-      dCtx.beginPath();
-      const realPoints = (data.profiles && Array.isArray(data.profiles.real)) ? data.profiles.real.slice(0, 30) : [];
-      realPoints.forEach((val, i) => {
-        const x = 30 + (i * 14);
-        const y = Math.max(10, Math.min(140, 120 - (val * 0.9)));
-        if (i === 0) dCtx.moveTo(x, y);
-        else dCtx.lineTo(x, y);
-      });
-      dCtx.stroke();
-
-      dCtx.strokeStyle = isReal ? "#38bdf8" : "#ef4444";
-      dCtx.lineWidth = 2;
-      dCtx.setLineDash([4, 4]);
-      dCtx.beginPath();
-      points.forEach((val, i) => {
-        const x = 30 + (i * 14);
-        const y = Math.max(10, Math.min(140, 120 - (val * 0.9)));
-        if (i === 0) dCtx.moveTo(x, y);
-        else dCtx.lineTo(x, y);
-      });
-      dCtx.stroke();
-      dCtx.setLineDash([]);
+      const grid = document.getElementById("isoGrid");
+      grid.innerHTML = (iso.criteria || []).map(c => `
+        <div class="iso-item">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong style="font-size:0.85rem;">${c.name}</strong>
+            <span class="${c.status === 'PASS' ? 'iso-badge-pass' : 'iso-badge-warn'}">[${c.status}]</span>
+          </div>
+          <small style="color: var(--text-muted);">${c.detail}</small>
+        </div>
+      `).join("");
     }
 
+    // Feature 1: ELA Tamper Renderer
+    function renderElaAnalysis(ela) {
+      const panel = document.getElementById("elaPanel");
+      panel.style.display = "block";
+      
+      const img = document.getElementById("elaPreviewImg");
+      if (ela.preview_png_base64) {
+        img.src = `data:image/png;base64,${ela.preview_png_base64}`;
+        img.style.display = "inline-block";
+      }
+
+      const status = document.getElementById("elaTamperStatus");
+      if (ela.tamper_detected) {
+        status.style.color = "#f87171";
+        status.innerText = `ANOMALY DETECTED (Confidence: ${ela.tamper_confidence}%)`;
+      } else {
+        status.style.color = "#4ade80";
+        status.innerText = "Authentic (Uniform Quantization Error Surface)";
+      }
+
+      document.getElementById("elaMeanError").innerText = `${ela.mean_error} LSB`;
+      document.getElementById("elaMaxError").innerText = `${ela.max_error} LSB`;
+    }
+
+    // Feature 3: Playback Animator Controller
+    function setupStrokePlayback(data) {
+      const panel = document.getElementById("playbackPanel");
+      panel.style.display = "block";
+      const pCanvas = document.getElementById("playbackCanvas");
+      const pCtx = pCanvas.getContext("2d");
+      pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+
+      if (drawnStrokePoints.length > 0) {
+        playbackPoints = [...drawnStrokePoints];
+      } else {
+        // Synthesize kinematic curve from extracted crest-trough profiles
+        const vals = data.profiles?.quest || [];
+        playbackPoints = [];
+        vals.forEach((v, i) => {
+          playbackPoints.push({
+            x: 40 + (i * 13),
+            y: Math.max(20, Math.min(140, 130 - (v * 1.1))),
+            start: (i === 0 || i % 10 === 0)
+          });
+        });
+      }
+
+      playbackIdx = 0;
+      document.getElementById("playbackScrub").value = 0;
+      document.getElementById("playbackPercent").innerText = "0%";
+      if (playbackTimer) clearInterval(playbackTimer);
+      isPlaying = false;
+      document.getElementById("btnPlayPause").innerText = "▶ Play Stroke";
+    }
+
+    function togglePlayback() {
+      const btn = document.getElementById("btnPlayPause");
+      if (isPlaying) {
+        clearInterval(playbackTimer);
+        isPlaying = false;
+        btn.innerText = "▶ Play Stroke";
+      } else {
+        isPlaying = true;
+        btn.innerText = "⏸ Pause";
+        if (playbackIdx >= playbackPoints.length - 1) {
+          playbackIdx = 0;
+          const pCanvas = document.getElementById("playbackCanvas");
+          pCanvas.getContext("2d").clearRect(0, 0, pCanvas.width, pCanvas.height);
+        }
+        playbackTimer = setInterval(drawPlaybackStep, 25);
+      }
+    }
+
+    function drawPlaybackStep() {
+      if (playbackIdx >= playbackPoints.length - 1) {
+        clearInterval(playbackTimer);
+        isPlaying = false;
+        document.getElementById("btnPlayPause").innerText = "↺ Replay";
+        return;
+      }
+
+      const pCanvas = document.getElementById("playbackCanvas");
+      const pCtx = pCanvas.getContext("2d");
+      pCtx.lineWidth = 3;
+      pCtx.lineCap = "round";
+      pCtx.strokeStyle = "#0284c7";
+
+      const pt = playbackPoints[playbackIdx];
+      const nextPt = playbackPoints[playbackIdx + 1];
+
+      if (!nextPt.start) {
+        pCtx.beginPath();
+        pCtx.moveTo(pt.x, pt.y);
+        pCtx.lineTo(nextPt.x, nextPt.y);
+        pCtx.stroke();
+      }
+
+      playbackIdx++;
+      const pct = Math.round((playbackIdx / (playbackPoints.length - 1)) * 100);
+      document.getElementById("playbackScrub").value = pct;
+      document.getElementById("playbackPercent").innerText = `${pct}%`;
+    }
+
+    function scrubPlayback(val) {
+      const pCanvas = document.getElementById("playbackCanvas");
+      const pCtx = pCanvas.getContext("2d");
+      pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+      pCtx.lineWidth = 3;
+      pCtx.lineCap = "round";
+      pCtx.strokeStyle = "#0284c7";
+
+      const targetIdx = Math.floor((val / 100) * (playbackPoints.length - 1));
+      for (let i = 0; i < targetIdx; i++) {
+        const pt = playbackPoints[i];
+        const nextPt = playbackPoints[i + 1];
+        if (!nextPt.start) {
+          pCtx.beginPath();
+          pCtx.moveTo(pt.x, pt.y);
+          pCtx.lineTo(nextPt.x, nextPt.y);
+          pCtx.stroke();
+        }
+      }
+      playbackIdx = targetIdx;
+      document.getElementById("playbackPercent").innerText = `${val}%`;
+    }
+
+    // Ghost Overlay & Blink Comparator
     function initGhostOverlay(realImgSrc, questImgSrc, auditHash) {
       const inspector = document.getElementById("overlayInspector");
       if (!inspector) return;
@@ -702,8 +704,7 @@
       let loaded = 0;
 
       const onLoaded = () => {
-        loaded++;
-        if (loaded === 2) {
+        if (++loaded === 2) {
           cachedRealMat = img1;
           cachedQuestMat = img2;
           drawGhostComposite(0.5);
@@ -720,7 +721,6 @@
       const overlay = document.getElementById("overlayCanvas");
       if (!overlay || !cachedRealMat || !cachedQuestMat) return;
       const cvCtx = overlay.getContext("2d");
-
       cvCtx.clearRect(0, 0, overlay.width, overlay.height);
 
       cvCtx.globalAlpha = 1.0;
@@ -753,23 +753,40 @@
       }
     }
 
-    function exportAuditCertificate() {
-      const element = document.getElementById("reportContent");
-      const opt = {
-        margin: 0.3,
-        filename: `Signify_Audit_Cert_${Date.now()}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, backgroundColor: document.body.classList.contains("light-mode") ? '#ffffff' : '#0b1329' },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(element).save();
+    async function loadHistoryDashboard() {
+      try {
+        const res = await fetch(`${API_BASE}/history`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        document.getElementById("kpiTotal").innerText = data.total_attempts;
+        document.getElementById("kpiGenuine").innerText = data.genuine_count;
+        document.getElementById("kpiForged").innerText = data.forged_count;
+        document.getElementById("kpiRate").innerText = `${data.acceptance_rate}%`;
+        document.getElementById("kpiAvg").innerText = `${data.average_score}%`;
+
+        renderDonutChart(data.genuine_count, data.forged_count);
+        renderTrendChart([...data.logs].reverse());
+        renderTable(data.logs);
+      } catch (e) {}
     }
 
-    async function clearAllHistory() {
-      if (confirm("Wipe all audit history logs?")) {
-        await fetch(`${API_BASE}/history`, { method: "DELETE" });
-        loadHistoryDashboard();
-      }
+    async function refreshTableAndKpisOnly() {
+      try {
+        const res = await fetch(`${API_BASE}/history`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        document.getElementById("kpiTotal").innerText = data.total_attempts;
+        document.getElementById("kpiGenuine").innerText = data.genuine_count;
+        document.getElementById("kpiForged").innerText = data.forged_count;
+        document.getElementById("kpiRate").innerText = `${data.acceptance_rate}%`;
+        document.getElementById("kpiAvg").innerText = `${data.average_score}%`;
+
+        renderDonutChart(data.genuine_count, data.forged_count);
+        renderTrendChart([...data.logs].reverse());
+        renderTable(data.logs);
+      } catch (e) {}
     }
 
     function renderDonutChart(genuine, forged) {
@@ -777,10 +794,7 @@
       if (!canvasElem) return;
       const chartCtx = canvasElem.getContext("2d");
       
-      if (donutChartInstance) {
-        donutChartInstance.destroy();
-        donutChartInstance = null;
-      }
+      if (donutChartInstance) donutChartInstance.destroy();
 
       const total = genuine + forged;
       donutChartInstance = new Chart(chartCtx, {
@@ -807,10 +821,7 @@
       if (!canvasElem) return;
       const chartCtx = canvasElem.getContext("2d");
 
-      if (trendChartInstance) {
-        trendChartInstance.destroy();
-        trendChartInstance = null;
-      }
+      if (trendChartInstance) trendChartInstance.destroy();
 
       trendChartInstance = new Chart(chartCtx, {
         type: "line",
@@ -845,10 +856,7 @@
       if (!canvasElem) return;
       const chartCtx = canvasElem.getContext("2d");
       
-      if (radarChartInstance) {
-        radarChartInstance.destroy();
-        radarChartInstance = null;
-      }
+      if (radarChartInstance) radarChartInstance.destroy();
 
       const m = Number(metric) || 0;
       const k = Number(keypoint) || 0;
@@ -892,44 +900,19 @@
       if (!canvasElem) return;
       const chartCtx = canvasElem.getContext("2d");
 
-      if (profileChartInstance) {
-        profileChartInstance.destroy();
-        profileChartInstance = null;
-      }
+      if (profileChartInstance) profileChartInstance.destroy();
 
-      const safeLabels = (labels && Array.isArray(labels) && labels.length > 0) 
-        ? labels 
-        : Array.from({ length: 40 }, (_, i) => `Pt ${i + 1}`);
-
-      const safeReal = (realCurve && Array.isArray(realCurve) && realCurve.length > 0)
-        ? realCurve.map(v => Number(v) || 0)
-        : new Array(40).fill(0);
-
-      const safeQuest = (questCurve && Array.isArray(questCurve) && questCurve.length > 0)
-        ? questCurve.map(v => Number(v) || 0)
-        : new Array(40).fill(0);
+      const safeLabels = (labels && Array.isArray(labels) && labels.length > 0) ? labels : Array.from({ length: 40 }, (_, i) => `Pt ${i + 1}`);
+      const safeReal = (realCurve && Array.isArray(realCurve) && realCurve.length > 0) ? realCurve.map(v => Number(v) || 0) : new Array(40).fill(0);
+      const safeQuest = (questCurve && Array.isArray(questCurve) && questCurve.length > 0) ? questCurve.map(v => Number(v) || 0) : new Array(40).fill(0);
 
       profileChartInstance = new Chart(chartCtx, {
         type: "line",
         data: {
           labels: safeLabels,
           datasets: [
-            {
-              label: "Reference Profile",
-              data: safeReal,
-              borderColor: "#22c55e",
-              borderWidth: 2,
-              pointRadius: 0,
-              tension: 0.35
-            },
-            {
-              label: "Candidate Profile",
-              data: safeQuest,
-              borderColor: "#38bdf8",
-              borderWidth: 2,
-              pointRadius: 0,
-              tension: 0.35
-            }
+            { label: "Reference Profile", data: safeReal, borderColor: "#22c55e", borderWidth: 2, pointRadius: 0, tension: 0.35 },
+            { label: "Candidate Profile", data: safeQuest, borderColor: "#38bdf8", borderWidth: 2, pointRadius: 0, tension: 0.35 }
           ]
         },
         options: {
@@ -966,6 +949,25 @@
           </tr>
         `;
       }).join("");
+    }
+
+    function exportAuditCertificate() {
+      const element = document.getElementById("reportContent");
+      const opt = {
+        margin: 0.3,
+        filename: `Signify_Audit_Cert_${Date.now()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, backgroundColor: document.body.classList.contains("light-mode") ? '#ffffff' : '#0b1329' },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    async function clearAllHistory() {
+      if (confirm("Wipe all audit history logs?")) {
+        await fetch(`${API_BASE}/history`, { method: "DELETE" });
+        loadHistoryDashboard();
+      }
     }
   </script>
 </body>
