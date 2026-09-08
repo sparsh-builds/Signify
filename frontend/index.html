@@ -149,7 +149,7 @@
         <small style="color: var(--text-muted);">Siamese CNN Latent Space • Crest-Trough Waveforms • Harris Corner Micro-Tremors</small>
       </div>
       <div class="top-actions">
-        <a class="btn-powerbi" href="http://127.0.0.1:8000/powerbi/telemetry" target="_blank">
+        <a class="btn-powerbi" id="powerBiLink" href="http://127.0.0.1:8000/powerbi/telemetry" target="_blank">
           📊 Power BI Feed
         </a>
         <button type="button" class="btn-pdf" id="btnDownloadPDF" onclick="exportAuditCertificate()">
@@ -224,7 +224,7 @@
         <canvas id="pad" class="pad" width="520" height="160"></canvas>
         <div class="btn-row">
           <button type="button" class="main-btn btn-gray" onclick="clearPad()">Clear Canvas</button>
-          <button type="button" class="main-btn btn-primary" onclick="verifyDrawn()">Verify & Analyze</button>
+          <button type="button" class="main-btn btn-primary" onclick="verifyDrawn(event)">Verify & Analyze</button>
         </div>
       </div>
     </div>
@@ -262,7 +262,7 @@
           <img id="compTestImg" style="display: none;" alt="Questioned">
         </div>
         <div class="btn-row">
-          <button type="button" class="main-btn btn-primary" onclick="verifyImagePair()">Compare Image Pair</button>
+          <button type="button" class="main-btn btn-primary" onclick="verifyImagePair(event)">Compare Image Pair</button>
         </div>
       </div>
     </div>
@@ -283,7 +283,7 @@
           <input type="file" id="enrollFiles" accept="image/*" multiple>
         </div>
       </div>
-      <button type="button" class="main-btn btn-primary" onclick="submitMultiEnrollment()">Enroll Biometric Centroid</button>
+      <button type="button" class="main-btn btn-primary" onclick="submitMultiEnrollment(event)">Enroll Biometric Centroid</button>
       <div id="enrollStatusBox" style="display: none; margin-top: 12px; padding: 12px; border-radius: 6px; font-size: 0.85rem;"></div>
     </div>
 
@@ -363,15 +363,21 @@
   </div>
 
   <script>
+    // In production on Vercel, replace with your Render backend URL:
     const API_BASE = "http://127.0.0.1:8000";
-    let lastResult = null;
+    
+    // Update Power BI link target
+    document.getElementById("powerBiLink").href = `${API_BASE}/powerbi/telemetry`;
 
+    let lastResult = null;
     let donutChartInstance = null;
     let trendChartInstance = null;
     let radarChartInstance = null;
     let profileChartInstance = null;
 
-    window.onload = () => loadHistoryDashboard();
+    window.addEventListener("DOMContentLoaded", () => {
+      loadHistoryDashboard();
+    });
 
     function toggleTheme() {
       document.body.classList.toggle("light-mode");
@@ -442,6 +448,7 @@
     async function loadHistoryDashboard() {
       try {
         const res = await fetch(`${API_BASE}/history`);
+        if (!res.ok) return;
         const data = await res.json();
 
         document.getElementById("kpiTotal").innerText = data.total_attempts;
@@ -461,6 +468,7 @@
     async function refreshTableAndKpisOnly() {
       try {
         const res = await fetch(`${API_BASE}/history`);
+        if (!res.ok) return;
         const data = await res.json();
 
         document.getElementById("kpiTotal").innerText = data.total_attempts;
@@ -477,7 +485,8 @@
       }
     }
 
-    async function verifyDrawn() {
+    async function verifyDrawn(e) {
+      if (e) e.preventDefault();
       const refFile = document.getElementById("drawRefFile").files[0];
       if (!refFile) { alert("Please select a Reference Signature Image."); return; }
 
@@ -486,10 +495,11 @@
       fd.append("real_signature", refFile);
       fd.append("questioned_signature", drawnBlob, "drawn.png");
       fd.append("risk_tier", document.getElementById("globalRiskTier").value);
-      sendVerification(fd);
+      await sendVerification(fd);
     }
 
-    async function verifyImagePair() {
+    async function verifyImagePair(e) {
+      if (e) e.preventDefault();
       const realFile = document.getElementById("compRealFile").files[0];
       const testFile = document.getElementById("compTestFile").files[0];
       if (!realFile || !testFile) { alert("Select both Reference and Questioned images."); return; }
@@ -500,7 +510,7 @@
       fd.append("real_mode", document.getElementById("compRealMode").value);
       fd.append("questioned_mode", document.getElementById("compTestMode").value);
       fd.append("risk_tier", document.getElementById("globalRiskTier").value);
-      sendVerification(fd);
+      await sendVerification(fd);
     }
 
     async function sendVerification(formData) {
@@ -536,14 +546,14 @@
         }
 
         renderRadarChart(data.metric_confidence, data.keypoint_confidence, data.cnn_similarity, data.overall_score);
-        renderProfileChart(
-          data.profiles ? data.profiles.labels : [], 
-          data.profiles ? data.profiles.real : [], 
-          data.profiles ? data.profiles.quest : []
-        );
-        drawSyntheticForensics(data);
+        
+        const labels = (data.profiles && data.profiles.labels) ? data.profiles.labels : [];
+        const realVals = (data.profiles && data.profiles.real) ? data.profiles.real : [];
+        const questVals = (data.profiles && data.profiles.quest) ? data.profiles.quest : [];
+        renderProfileChart(labels, realVals, questVals);
 
-        refreshTableAndKpisOnly();
+        drawSyntheticForensics(data);
+        await refreshTableAndKpisOnly();
 
       } catch (err) {
         verdictBox.className = "fake";
@@ -551,7 +561,8 @@
       }
     }
 
-    async function submitMultiEnrollment() {
+    async function submitMultiEnrollment(e) {
+      if (e) e.preventDefault();
       const username = document.getElementById("enrollUsername").value.trim();
       const fileInput = document.getElementById("enrollFiles");
       const statusBox = document.getElementById("enrollStatusBox");
@@ -610,10 +621,10 @@
       hCtx.lineWidth = isReal ? 3 : 5;
       hCtx.lineCap = "round";
       hCtx.beginPath();
-      const points = (data.profiles && data.profiles.quest) ? data.profiles.quest.slice(0, 30) : [];
+      const points = (data.profiles && Array.isArray(data.profiles.quest)) ? data.profiles.quest.slice(0, 30) : [];
       points.forEach((val, i) => {
         const x = 30 + (i * 14);
-        const y = 120 - (val * 0.9);
+        const y = Math.max(10, Math.min(140, 120 - (val * 0.9)));
         if (i === 0) hCtx.moveTo(x, y);
         else hCtx.lineTo(x, y);
       });
@@ -627,10 +638,10 @@
       dCtx.strokeStyle = "#22c55e";
       dCtx.lineWidth = 2;
       dCtx.beginPath();
-      const realPoints = (data.profiles && data.profiles.real) ? data.profiles.real.slice(0, 30) : [];
+      const realPoints = (data.profiles && Array.isArray(data.profiles.real)) ? data.profiles.real.slice(0, 30) : [];
       realPoints.forEach((val, i) => {
         const x = 30 + (i * 14);
-        const y = 120 - (val * 0.9);
+        const y = Math.max(10, Math.min(140, 120 - (val * 0.9)));
         if (i === 0) dCtx.moveTo(x, y);
         else dCtx.lineTo(x, y);
       });
@@ -642,7 +653,7 @@
       dCtx.beginPath();
       points.forEach((val, i) => {
         const x = 30 + (i * 14);
-        const y = 120 - (val * 0.9);
+        const y = Math.max(10, Math.min(140, 120 - (val * 0.9)));
         if (i === 0) dCtx.moveTo(x, y);
         else dCtx.lineTo(x, y);
       });
@@ -670,8 +681,14 @@
     }
 
     function renderDonutChart(genuine, forged) {
-      const ctx = document.getElementById("donutChart").getContext("2d");
-      if (donutChartInstance) donutChartInstance.destroy();
+      const canvasElem = document.getElementById("donutChart");
+      if (!canvasElem) return;
+      const ctx = canvasElem.getContext("2d");
+      
+      if (donutChartInstance) {
+        donutChartInstance.destroy();
+        donutChartInstance = null;
+      }
 
       const total = genuine + forged;
       donutChartInstance = new Chart(ctx, {
@@ -694,8 +711,14 @@
     }
 
     function renderTrendChart(logs) {
-      const ctx = document.getElementById("trendChart").getContext("2d");
-      if (trendChartInstance) trendChartInstance.destroy();
+      const canvasElem = document.getElementById("trendChart");
+      if (!canvasElem) return;
+      const ctx = canvasElem.getContext("2d");
+
+      if (trendChartInstance) {
+        trendChartInstance.destroy();
+        trendChartInstance = null;
+      }
 
       trendChartInstance = new Chart(ctx, {
         type: "line",
@@ -756,6 +779,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 300 },
           scales: {
             r: {
               min: 0,
@@ -819,6 +843,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 300 },
           plugins: { legend: { position: "top", labels: { color: "#cbd5e1", boxWidth: 10 } } },
           scales: {
             x: { ticks: { display: false }, grid: { color: "rgba(255,255,255,0.05)" } },
