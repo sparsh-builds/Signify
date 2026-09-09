@@ -436,9 +436,9 @@ async def compare_signatures(
     quest_bytes = await questioned_signature.read()
 
     thresholds = {
-        "low": {"overall": 58.0, "metric": 0.20, "keypoint": 0.55, "label": "Low Risk (Attendance / Standard KYC)"},
-        "medium": {"overall": 68.0, "metric": 0.30, "keypoint": 0.70, "label": "Medium Risk (Cheques < 50k)"},
-        "high": {"overall": 78.0, "metric": 0.40, "keypoint": 0.80, "label": "High Risk (Property / High-Value RTGS)"}
+        "low":    {"overall": 58.0, "metric": 0.20, "keypoint": 0.55, "label": "Low Risk (Attendance / Standard KYC)"},
+        "medium": {"overall": 68.0, "metric": 0.30, "keypoint": 0.68, "label": "Medium Risk (Cheques < 50k)"},
+        "high":   {"overall": 75.0, "metric": 0.40, "keypoint": 0.75, "label": "High Risk (Property / High-Value RTGS)"}
     }
     tier_config = thresholds.get(risk_tier.lower(), thresholds["medium"])
 
@@ -519,22 +519,25 @@ async def compare_signatures(
     metric_conf, keypoint_conf = match_forgery_confidence(quest_processed, ref_template)
     cnn_sim = compute_cnn_similarity(real_cnn, quest_cnn)
 
-    # Balanced Fusion: Macro representation (CNN) + Micro geometry (Harris & Crest-Trough)
+    # 1. Balanced Multi-Metric Weights:
+    # 40% CNN Latent Identity + 30% Waveform Morphology + 30% Micro-Corner Geometry
     w_cnn = 0.40
     w_metric = 0.30
     w_corner = 0.30
 
     overall_score = round(((metric_conf * w_metric) + (keypoint_conf * w_corner) + (cnn_sim * w_cnn)) * 100, 1)
 
-    # Forensic Decision Gate:
-    # Keypoints MUST meet the requirement to catch simulated forgeries
+    # 2. Mandatory Forensic Gating:
+    # A skilled forgery mimics global silhouette (tricking CNN), but consistently fails loop closures and vertices.
+    # Therefore, Keypoints MUST meet the tier threshold.
     keypoint_passed = (keypoint_conf >= tier_config["keypoint"])
+    metric_passed = (metric_conf >= tier_config["metric"])
     score_passed = (overall_score >= tier_config["overall"])
 
-    # CNN Override only forgives morphology waveform issues if micro-keypoints match cleanly
-    cnn_override = (cnn_sim >= 0.92 and keypoint_passed and overall_score >= 65.0)
+    # CNN Override only forgives background crop noise IF keypoints and morphology pass basic validity
+    cnn_override = (cnn_sim >= 0.94 and keypoint_passed and overall_score >= tier_config["overall"])
 
-    is_real = cnn_override or (score_passed and keypoint_passed and metric_conf >= tier_config["metric"])
+    is_real = keypoint_passed and (score_passed or cnn_override) and metric_passed
     verdict_str = "GENUINE (REAL)" if is_real else "FORGED (FAKE)"
 
     # Generate enterprise SHA-256 audit seal
