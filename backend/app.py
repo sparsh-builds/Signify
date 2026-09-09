@@ -177,7 +177,6 @@ def health_check():
 
 @app.get("/powerbi/telemetry")
 def get_powerbi_telemetry(db_session: Session = Depends(get_db)):
-    """Dedicated tabular endpoint designed for Power BI Desktop Web connector."""
     records = db_session.query(VerificationLog).order_by(VerificationLog.id.asc()).all()
     out = []
     for r in records:
@@ -437,20 +436,11 @@ async def compare_signatures(
     quest_bytes = await questioned_signature.read()
 
     thresholds = {
-        "low": {"overall": 55.0, "metric": 0.35, "keypoint": 0.40, "label": "Low Risk (Attendance / Standard KYC)"},
-        "medium": {"overall": 65.0, "metric": 0.45, "keypoint": 0.50, "label": "Medium Risk (Cheques < 50k)"},
-        "high": {"overall": 78.0, "metric": 0.55, "keypoint": 0.60, "label": "High Risk (Property / High-Value RTGS)"}
+        "low": {"overall": 55.0, "metric": 0.20, "keypoint": 0.40, "label": "Low Risk (Attendance / Standard KYC)"},
+        "medium": {"overall": 65.0, "metric": 0.30, "keypoint": 0.50, "label": "Medium Risk (Cheques < 50k)"},
+        "high": {"overall": 75.0, "metric": 0.40, "keypoint": 0.60, "label": "High Risk (Property / High-Value RTGS)"}
     }
     tier_config = thresholds.get(risk_tier.lower(), thresholds["medium"])
-
-    # If CNN similarity is > 90% and overall score is strong, do not fail on slight waveform variance
-    cnn_override = (cnn_sim >= 0.90 and overall_score >= tier_config["overall"])
-
-    is_real = cnn_override or (
-        (overall_score >= tier_config["overall"]) and
-        (metric_conf >= tier_config["metric"]) and
-        (keypoint_conf >= tier_config["keypoint"])
-    )
 
     # 1. Anti-Spoofing Check
     if questioned_mode == "photo":
@@ -472,7 +462,7 @@ async def compare_signatures(
                 "iso_compliance": {"passed_all": False, "compliance_score": 0, "criteria": []}
             }
 
-    # 2. Extract and Preprocess (Executed first so arrays exist)
+    # 2. Extract and Preprocess images first
     real_sig_bytes, real_prep_mode, real_detection = resolve_signature_image(
         real_bytes, real_mode, real_crop_box
     )
@@ -531,7 +521,12 @@ async def compare_signatures(
 
     overall_score = round(((metric_conf * 0.35) + (keypoint_conf * 0.35) + (cnn_sim * 0.30)) * 100, 1)
 
-    is_real = (
+    # Verification Decision Logic:
+    # If the CNN has high confidence (>= 90%) and overall score is above threshold,
+    # approve without letting crop/pad waveform variance reject genuine samples.
+    cnn_override = (cnn_sim >= 0.90 and overall_score >= tier_config["overall"])
+
+    is_real = cnn_override or (
         (overall_score >= tier_config["overall"]) and
         (metric_conf >= tier_config["metric"]) and
         (keypoint_conf >= tier_config["keypoint"])
