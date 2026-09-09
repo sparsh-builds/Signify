@@ -199,36 +199,41 @@ def classify_pen_medium_and_substrate(binary_sig: np.ndarray) -> dict:
     }
     
     
-def extract_crest_trough_metrics(processed_img: np.ndarray) -> dict:
-    inv = (255 - processed_img) > 0
-    total_area = float(np.sum(inv)) + 1e-8
-    
-    coords = cv2.findNonZero((255 - processed_img).astype(np.uint8))
-    if coords is None:
+def extract_crest_trough_metrics(binary_img: np.ndarray) -> dict:
+    if binary_img is None or binary_img.size == 0:
         return {"len_ratio": 0.0, "width_ratio": 0.0, "crest_trough_val": 0.0}
-        
-    x, y, w, h = cv2.boundingRect(coords)
-    len_to_space = float(w) / total_area
-    width_to_space = float(h) / total_area
-    
-    vertical_proj = np.sum(inv, axis=0).astype(np.float32)
-    diffs = np.diff(vertical_proj)
-    crests = np.where((diffs[:-1] > 0) & (diffs[1:] < 0))[0]
-    troughs = np.where((diffs[:-1] < 0) & (diffs[1:] > 0))[0]
-    
-    relative_dist_sum = 0.0
-    min_len = min(len(crests), len(troughs))
-    for i in range(min_len):
-        relative_dist_sum += abs(float(crests[i]) - float(troughs[i]))
-        
-    crest_trough_param = float(relative_dist_sum) / total_area
-    
-    return {
-        "len_ratio": float(len_to_space),
-        "width_ratio": float(width_to_space),
-        "crest_trough_val": float(crest_trough_param)
-    }
 
+    # Invert so ink is white (255)
+    ink_mask = (binary_img < 128).astype(np.uint8) * 255
+    coords = cv2.findNonZero(ink_mask)
+
+    # Crop tightly to the stroke envelope to eliminate white-space padding disparities
+    if coords is not None:
+        x, y, w, h = cv2.boundingRect(coords)
+        pad = 4
+        h_img, w_img = binary_img.shape
+        y1, y2 = max(0, y - pad), min(h_img, y + h + pad)
+        x1, x2 = max(0, x - pad), min(w_img, x + w + pad)
+        cropped_ink = ink_mask[y1:y2, x1:x2]
+    else:
+        cropped_ink = ink_mask
+
+    proj = np.sum(cropped_ink > 0, axis=0).astype(np.float32)
+    if len(proj) == 0 or np.max(proj) == 0:
+        return {"len_ratio": 0.0, "width_ratio": 0.0, "crest_trough_val": 0.0}
+
+    # Resample to 40 normalized columns
+    resampled = cv2.resize(proj.reshape(1, -1), (40, 1), interpolation=cv2.INTER_AREA).flatten()
+    norm_profile = resampled / (np.max(resampled) + 1e-6)
+
+    # Waveform variance
+    crest_trough_val = float(np.std(norm_profile))
+
+    return {
+        "len_ratio": float(np.count_nonzero(cropped_ink)) / float(cropped_ink.size),
+        "width_ratio": float(cropped_ink.shape[1]) / float(max(1, cropped_ink.shape[0])),
+        "crest_trough_val": round(crest_trough_val, 5)
+    }
 def extract_harris_and_orb_points(processed_img: np.ndarray):
     gray = np.float32(processed_img)
     dst = cv2.cornerHarris(gray, blockSize=2, ksize=3, k=0.04)

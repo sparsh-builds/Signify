@@ -437,11 +437,20 @@ async def compare_signatures(
     quest_bytes = await questioned_signature.read()
 
     thresholds = {
-        "low": {"overall": 55.0, "metric": 0.50, "keypoint": 0.55, "label": "Low Risk (Attendance / Standard KYC)"},
-        "medium": {"overall": 65.0, "metric": 0.60, "keypoint": 0.70, "label": "Medium Risk (Cheques < 50k)"},
-        "high": {"overall": 78.0, "metric": 0.70, "keypoint": 0.80, "label": "High Risk (Property / High-Value RTGS)"}
+        "low": {"overall": 55.0, "metric": 0.35, "keypoint": 0.40, "label": "Low Risk (Attendance / Standard KYC)"},
+        "medium": {"overall": 65.0, "metric": 0.45, "keypoint": 0.50, "label": "Medium Risk (Cheques < 50k)"},
+        "high": {"overall": 78.0, "metric": 0.55, "keypoint": 0.60, "label": "High Risk (Property / High-Value RTGS)"}
     }
     tier_config = thresholds.get(risk_tier.lower(), thresholds["medium"])
+
+    # If CNN similarity is > 90% and overall score is strong, do not fail on slight waveform variance
+    cnn_override = (cnn_sim >= 0.90 and overall_score >= tier_config["overall"])
+
+    is_real = cnn_override or (
+        (overall_score >= tier_config["overall"]) and
+        (metric_conf >= tier_config["metric"]) and
+        (keypoint_conf >= tier_config["keypoint"])
+    )
 
     # 1. Anti-Spoofing Check
     if questioned_mode == "photo":
