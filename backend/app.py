@@ -1,3 +1,6 @@
+torch.set_num_threads(1)
+
+
 import os
 import json
 import base64
@@ -11,6 +14,10 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import hashlib
+
+
+
+
 
 from features import (
     extract_crest_trough_metrics,

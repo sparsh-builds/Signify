@@ -2,6 +2,15 @@ import cv2
 import numpy as np
 from document_utils import robust_binarize
 
+
+def downscale_if_needed(img: np.ndarray, max_dim: int = 800) -> np.ndarray:
+    h, w = img.shape[:2]
+    if max(h, w) > max_dim:
+        scale = max_dim / float(max(h, w))
+        return cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+    return img
+
+
 def remove_noise(binary_img: np.ndarray) -> np.ndarray:
     """
     Vectorized morphological filtering to strip isolated salt-and-pepper noise
