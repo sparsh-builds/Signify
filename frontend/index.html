@@ -419,6 +419,11 @@
     }
 
     function setMode(mode) {
+      clearPad();
+      playbackPoints = [];
+      if (playbackTimer) clearInterval(playbackTimer);
+      isPlaying = false;
+
       document.getElementById('modeDrawWorkspace').style.display = mode === 'draw' ? 'grid' : 'none';
       document.getElementById('modeUploadWorkspace').style.display = mode === 'upload' ? 'grid' : 'none';
       document.getElementById('modeEnrollWorkspace').style.display = mode === 'enroll' ? 'block' : 'none';
@@ -492,11 +497,14 @@
       fd.append("real_signature", refFile);
       fd.append("questioned_signature", drawnBlob, "drawn.png");
       fd.append("risk_tier", document.getElementById("globalRiskTier").value);
-      await sendVerification(fd);
+      await sendVerification(fd, true);
     }
 
     async function verifyImagePair(e) {
       if (e) e.preventDefault();
+      // Clear manual pad points so dual image analysis synthesizes from the current image
+      drawnStrokePoints = [];
+
       const realFile = document.getElementById("compRealFile").files[0];
       const testFile = document.getElementById("compTestFile").files[0];
       if (!realFile || !testFile) { alert("Select both Reference and Questioned images."); return; }
@@ -507,10 +515,10 @@
       fd.append("real_mode", document.getElementById("compRealMode").value);
       fd.append("questioned_mode", document.getElementById("compTestMode").value);
       fd.append("risk_tier", document.getElementById("globalRiskTier").value);
-      await sendVerification(fd);
+      await sendVerification(fd, false);
     }
 
-    async function sendVerification(formData) {
+    async function sendVerification(formData, fromCanvas) {
       const verdictBox = document.getElementById("verdictBox");
       verdictBox.style.display = "block";
       verdictBox.className = "";
@@ -552,7 +560,7 @@
         if (data.iso_compliance) renderIsoScorecard(data.iso_compliance);
         if (data.ela_analysis) renderElaAnalysis(data.ela_analysis);
 
-        setupStrokePlayback(data);
+        setupStrokePlayback(data, fromCanvas);
 
         const isDrawMode = document.getElementById('tabDraw').classList.contains('active');
         const realSrc = document.getElementById(isDrawMode ? 'drawRefImg' : 'compRealImg').src;
@@ -567,7 +575,6 @@
       }
     }
 
-    // Feature 2: ISO 19794-7 Scorecard Renderer
     function renderIsoScorecard(iso) {
       const panel = document.getElementById("isoPanel");
       panel.style.display = "block";
@@ -608,17 +615,17 @@
       document.getElementById("elaMaxError").innerText = `${ela.max_error} LSB`;
     }
 
-    // Feature 3: Playback Animator Controller
-    function setupStrokePlayback(data) {
+    function setupStrokePlayback(data, fromCanvas = false) {
       const panel = document.getElementById("playbackPanel");
       panel.style.display = "block";
       const pCanvas = document.getElementById("playbackCanvas");
       const pCtx = pCanvas.getContext("2d");
       pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
 
-      if (drawnStrokePoints.length > 0) {
+      if (fromCanvas && drawnStrokePoints.length > 0) {
         playbackPoints = [...drawnStrokePoints];
       } else {
+        // Synthesize kinematic curve from the active questioned signature's profile
         const vals = data.profiles?.quest || [];
         playbackPoints = [];
         vals.forEach((v, i) => {
@@ -709,7 +716,6 @@
       document.getElementById("playbackPercent").innerText = `${val}%`;
     }
 
-    // Ghost Overlay & Blink Comparator
     function initGhostOverlay(realImgSrc, questImgSrc, auditHash) {
       const inspector = document.getElementById("overlayInspector");
       if (!inspector) return;
