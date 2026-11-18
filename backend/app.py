@@ -14,6 +14,8 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import hashlib
+import torch
+torch.set_num_threads(1)
 
 
 
