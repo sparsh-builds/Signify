@@ -1,25 +1,19 @@
-torch.set_num_threads(1)
-
-
 import os
 import json
 import base64
+import hashlib
+from datetime import datetime
+from typing import Optional, List
+
 import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
-from datetime import datetime
-from typing import Optional, List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-import hashlib
-import torch
+
 torch.set_num_threads(1)
-
-
-
-
 
 from features import (
     extract_crest_trough_metrics,
@@ -31,9 +25,7 @@ from features import (
     compute_ela_heatmap,
     evaluate_iso_19794_7_compliance
 )
-
 from preprocessing import full_preprocessing
-
 from model import PaperSignatureCNN
 from document_utils import auto_extract_signature, encode_png
 from database import get_db, VerificationLog
@@ -82,6 +74,7 @@ else:
 
 cnn_model.eval()
 
+
 def compute_cnn_similarity(img1_crop: np.ndarray, img2_crop: np.ndarray) -> float:
     """Extracts 128-d latent features and computes cosine similarity."""
     t1 = torch.from_numpy(img1_crop).float().unsqueeze(0).unsqueeze(0).to(device) / 255.0
@@ -92,6 +85,7 @@ def compute_cnn_similarity(img1_crop: np.ndarray, img2_crop: np.ndarray) -> floa
         sim = F.cosine_similarity(emb1, emb2).item()
     return max(0.0, float(sim))
 
+
 def get_history() -> list:
     if os.path.exists(HISTORY_FILE):
         try:
@@ -101,12 +95,14 @@ def get_history() -> list:
             return []
     return []
 
+
 def save_history(history: list):
     try:
         with open(HISTORY_FILE, "w") as f:
             json.dump(history, f, indent=2)
     except Exception as e:
         print(f"Warning: History save failed: {e}")
+
 
 def get_db_json() -> dict:
     if os.path.exists(DB_FILE):
@@ -117,12 +113,14 @@ def get_db_json() -> dict:
             return {}
     return {}
 
+
 def save_db_json(data: dict):
     try:
         with open(DB_FILE, "w") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
         print(f"Warning: Database JSON save failed: {e}")
+
 
 def extract_raw_projection(processed_img: np.ndarray, num_bins=40) -> list:
     """Extracts 1D vertical stroke projection profile safely for any image format."""
@@ -135,6 +133,7 @@ def extract_raw_projection(processed_img: np.ndarray, num_bins=40) -> list:
     resampled = cv2.resize(proj.reshape(1, -1), (num_bins, 1), interpolation=cv2.INTER_AREA).flatten()
     max_val = np.max(resampled) + 1e-8
     return [round(float(v / max_val * 100), 1) for v in resampled]
+
 
 def resolve_signature_image(img_bytes: bytes, mode: str = "scan", crop_box: Optional[str] = None):
     if mode == "document":
@@ -172,6 +171,7 @@ def resolve_signature_image(img_bytes: bytes, mode: str = "scan", crop_box: Opti
 
     return img_bytes, "scan", None
 
+
 # --- API ENDPOINTS ---
 
 @app.get("/healthz")
@@ -183,6 +183,7 @@ def health_check():
         "cnn_loaded": os.path.exists(MODEL_WEIGHTS),
         "total_history_logs": len(get_history())
     }
+
 
 @app.get("/powerbi/telemetry")
 def get_powerbi_telemetry(db_session: Session = Depends(get_db)):
@@ -208,6 +209,7 @@ def get_powerbi_telemetry(db_session: Session = Depends(get_db)):
         })
     return out
 
+
 @app.get("/history")
 def fetch_history():
     history = get_history()
@@ -228,10 +230,12 @@ def fetch_history():
         "logs": history[::-1]
     }
 
+
 @app.delete("/history")
 def clear_history():
     save_history([])
     return {"status": "cleared", "message": "History wiped successfully."}
+
 
 @app.post("/enroll")
 async def enroll_signature(
@@ -262,6 +266,7 @@ async def enroll_signature(
     if detection_info:
         response["detection"] = detection_info
     return response
+
 
 @app.post("/enroll-multi")
 async def enroll_multi_specimens(
@@ -326,10 +331,12 @@ async def enroll_multi_specimens(
         "message": f"Biometric centroid successfully generated for user '{username}'."
     }
 
+
 @app.get("/enrolled-users")
 def list_enrolled_users():
     db = get_db_json()
     return {"users": list(db.keys())}
+
 
 @app.post("/verify-user")
 async def verify_against_enrolled_user(
@@ -429,6 +436,7 @@ async def verify_against_enrolled_user(
         "intra_personal_sigma_used": user_profile["intra_sigma"],
         "decision": f"{tier_config['label']}: " + ("APPROVED - Pattern Matched Enrolled Centroid" if is_real else "REJECTED - Deviation from Centroid")
     }
+
 
 @app.post("/compare-signatures")
 async def compare_signatures(
@@ -537,13 +545,10 @@ async def compare_signatures(
     overall_score = round(((metric_conf * w_metric) + (keypoint_conf * w_corner) + (cnn_sim * w_cnn)) * 100, 1)
 
     # 2. Mandatory Forensic Gating:
-    # A skilled forgery mimics global silhouette (tricking CNN), but consistently fails loop closures and vertices.
-    # Therefore, Keypoints MUST meet the tier threshold.
     keypoint_passed = (keypoint_conf >= tier_config["keypoint"])
     metric_passed = (metric_conf >= tier_config["metric"])
     score_passed = (overall_score >= tier_config["overall"])
 
-    # CNN Override only forgives background crop noise IF keypoints and morphology pass basic validity
     cnn_override = (cnn_sim >= 0.94 and keypoint_passed and overall_score >= tier_config["overall"])
 
     is_real = keypoint_passed and (score_passed or cnn_override) and metric_passed
@@ -631,6 +636,7 @@ async def compare_signatures(
         }
     }
 
+
 @app.post("/detect-signature-regions")
 async def detect_signature_regions_endpoint(file: UploadFile = File(...), top_k: int = Form(5)):
     img_bytes = await file.read()
@@ -654,6 +660,7 @@ async def detect_signature_regions_endpoint(file: UploadFile = File(...), top_k:
         "candidates_found": len(results),
         "candidates": results,
     }
+
 
 if __name__ == "__main__":
     import uvicorn
